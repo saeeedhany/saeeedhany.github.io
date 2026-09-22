@@ -1,0 +1,296 @@
+/* ============================================================================
+   BASE — reset, the frame, the grain, selection
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  /* zero radius. everywhere. the one exception is the CV tab end-caps. */
+  border-radius: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Native smooth scrolling only when Lenis is NOT driving; the two fight. */
+html:not(.lenis) {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.lenis) {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--f-read);
+  font-size: var(--t-body);
+  line-height: var(--lh-read);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-inline-size: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+   THE FRAME
+   A fixed border in the brand hue, drawn over everything. The single most
+   recognizable structural detail of the reference: light bands appear matted
+   inside an ink border. Content scrolls beneath it.
+   ========================================================================= */
+
+.frame {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  border: var(--frame) solid var(--ink);
+  pointer-events: none;
+}
+
+.page {
+  position: relative;
+  z-index: 2;
+  padding: var(--frame) var(--frame) 0;
+  /* centred column with ink edges on wide screens */
+  max-inline-size: var(--shell);
+  margin-inline: auto;
+}
+
+@media (max-width: 767px) {
+  .frame {
+    display: none;
+  }
+  .page {
+    padding: 0;
+  }
+}
+
+/* ============================================================================
+   GRAIN
+   The reference runs a WebGL2 canvas at 2% opacity over the whole viewport.
+   A tiled noise image is visually indistinguishable at that strength and costs
+   no shader, no context, no main-thread work.
+   ========================================================================= */
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url('/img/grain.png');
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .grain {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   LAYOUT PRIMITIVES
+   ========================================================================= */
+
+.container {
+  inline-size: 100%;
+  max-inline-size: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.band {
+  padding-block: var(--band);
+  position: relative;
+  /* isolation so per-band noise/blend layers don't reach the band above */
+  isolation: isolate;
+}
+
+.band--tight {
+  padding-block: calc(var(--band) * 0.6);
+}
+
+/* hairline rule */
+.rule {
+  block-size: 0;
+  box-shadow: 0 var(--hair) 0 0 var(--line);
+  border: 0;
+}
+
+/* an inset hairline box — never a border, so it can't shift layout */
+.boxed {
+  box-shadow: inset 0 0 0 var(--hair) var(--line-strong);
+}
+
+/* screen-reader only */
+.sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ============================================================================
+   PLATE — a dithered manuscript image with its noise layer and credit
+   ========================================================================= */
+
+.plate {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.plate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('/img/noise.png');
+  background-repeat: repeat;
+  background-size: var(--noise-tile) var(--noise-tile);
+  mix-blend-mode: color-burn;
+  opacity: 0.2;
+}
+
+.plate > img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.plate--square {
+  aspect-ratio: 1;
+}
+.plate--wide {
+  aspect-ratio: 16 / 7;
+}
+.plate--portrait {
+  aspect-ratio: 4 / 5;
+}
+
+.plate-credit {
+  margin-block-start: var(--s-s);
+  opacity: 0.55;
+}
+
+/* ============================================================================
+   PARALLAX
+   Scroll position is written into custom properties by JS; CSS consumes them.
+   Images are pre-scaled so drift never reveals an edge.
+   ========================================================================= */
+
+.px {
+  --py: 0px;
+}
+
+.px > .plate > img {
+  transform: translate3d(0, var(--py), 0) scale(1.18);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .px > .plate > img {
+    transform: none;
+    will-change: auto;
+  }
+}
+
+/* ============================================================================
+   SMOOTH SCROLL (Lenis)
+   Lenis drives real scroll position rather than transforming a wrapper, so
+   position:fixed elements — the frame, the grain, the revealed footer — keep
+   behaving normally. These rules are required by the library.
+   ========================================================================= */
+
+html.lenis,
+html.lenis body {
+  block-size: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* ============================================================================
+   FOOTER REVEAL
+   The footer is fixed behind the page; the page reserves a gap of exactly the
+   footer's height at its end. Scrolling into that gap slides the content up
+   off the footer and uncovers it, while --footer-progress fades and unblurs
+   it. This is the reference's mechanism: a reserved margin plus a blur driven
+   by a scroll-derived custom property.
+   ========================================================================= */
+
+:root {
+  --footer-h: clamp(340px, 56vh, 560px);
+}
+
+.page {
+  /* reserve the gap the fixed footer is revealed through.
+     margin-inline:auto is set above and must survive this rule. */
+  margin-block-end: var(--footer-h);
+  /* the content must be opaque and above the footer, or the blurred footer
+     shows through the whole page */
+  background: var(--ink);
+}
+
+/* The .footer--reveal rules themselves live in components.css, next to
+   .footer — they must come after it in source order or `.footer {
+   position: relative }` wins on equal specificity and the footer never
+   becomes fixed. */

@@ -1,0 +1,350 @@
+/* ============================================================================
+   BILINGUAL TYPE SYSTEM
+
+   Governing rule: METADATA SPEAKS LATIN MONO, EVERYTHING ELSE SPEAKS ITS
+   OWN LANGUAGE.
+
+   Metadata — dates, indices, ratings, filenames, statuses, tags — is uppercase
+   Latin mono at 0.1em tracking on Arabic pages too. It is inherently technical
+   and numeric, so a shared Latin voice reads as a spec sheet rather than as an
+   untranslated interface. That shared voice is what lets the reference's
+   Latin-only grammar survive into Arabic.
+
+   Navigation and UI labels do NOT follow that rule: on an Arabic-primary site,
+   English nav would be an untranslated interface, not a design decision. They
+   use a real Arabic UI face instead.
+   ========================================================================= */
+
+:root {
+  --f-display-la: 'Oswald', 'Arial Narrow', sans-serif;
+  --f-read-la: 'IBM Plex Sans', system-ui, sans-serif;
+  --f-ui-la: 'IBM Plex Mono', ui-monospace, monospace;
+  --f-display-ar: 'Reem Kufi', 'Noto Kufi Arabic', sans-serif;
+  --f-read-ar: 'Amiri', 'Times New Roman', serif;
+  --f-ui-ar: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, 'Courier New', monospace;
+
+  /* defaults = Latin */
+  --f-display: var(--f-display-la);
+  --f-read: var(--f-read-la);
+  --f-ui: var(--f-ui-la);
+  --tr-ui: var(--tr-chrome);
+  --case-ui: uppercase;
+  --t-ui: var(--t-label);
+  --t-read: var(--t-body);
+  --lh-reading: var(--lh-read);
+  --lh-disp: var(--lh-display);
+  --lh-sub: 1.1;
+  --lh-ttl: 1.15;
+  --tr-disp: var(--tr-display);
+  --case-disp: uppercase;
+  --hero-size: var(--t-hero);
+  --heading-size: var(--t-heading);
+}
+
+/* ---------------------------------------------------------------------------
+   ARABIC OVERRIDES
+
+   The reference violates all three of these rules. They are non-negotiable.
+   ------------------------------------------------------------------------ */
+:root:has(html[lang='ar']),
+[lang='ar'],
+[dir='rtl'] {
+  --f-display: var(--f-display-ar);
+  --f-read: var(--f-read-ar);
+
+  /* Nav and buttons get a real Arabic UI face: no tracking, no uppercase,
+     and slightly larger because Arabic UI text at 14px is cramped. */
+  --f-ui: var(--f-ui-ar);
+  --tr-ui: 0;
+  --case-ui: none;
+  --t-ui: 15px;
+
+  /* 1. Arabic needs MORE leading, not less. The reference's display type sits
+        at line-height 1.0. Reem Kufi has very deep vertical extents: at 1.22 a
+        final ي descender lands on the next line's hamza. Measured minimum for
+        three stacked lines at hero size is ~1.45; 1.5 leaves room for tashkeel. */
+  --lh-disp: 1.5;
+  --lh-sub: 1.45;
+  --lh-ttl: 1.4;
+  --lh-reading: 1.95;
+
+  /* 2. Arabic at 20px reads like Latin at 16px — Naskh has a small x-height. */
+  --t-read: 20px;
+
+  /* 3. Letter-spacing severs the connected script. Never on Arabic. */
+  --tr-disp: 0;
+
+  /* text-transform is a no-op in Arabic, which is precisely why the chrome
+     stays Latin rather than trying to shout in Arabic. */
+  --case-disp: none;
+
+  /* Reem Kufi is geometric, not condensed — at equal px it reads far heavier
+     than Archivo Narrow. Scale the display sizes down to match optical weight. */
+  --hero-size: clamp(2.75rem, 2.75rem + 2.1vw, 76px);
+  --heading-size: clamp(2rem, 1.9rem + 1.5vw, 56px);
+}
+
+/* Absolute guard: nothing may letter-space Arabic, including utility classes. */
+[lang='ar'],
+[lang='ar'] *,
+[dir='rtl'] .u-ar,
+.ar-text {
+  letter-spacing: 0;
+}
+
+/* ...but the chrome is Latin even inside an Arabic page, so it keeps its
+   tracking. This must win over the guard above. */
+[lang='ar'] .chrome,
+[lang='ar'] .chrome *,
+[dir='rtl'] .chrome,
+[dir='rtl'] .chrome * {
+  letter-spacing: var(--tr-chrome);
+}
+
+/* ============================================================================
+   ROLES
+   ========================================================================= */
+
+/* ---- ui: nav and button labels, in the page's own language -------------- */
+.ui {
+  font-family: var(--f-ui);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: var(--tr-ui);
+  text-transform: var(--case-ui);
+}
+
+/* ---- chrome: metadata only. always Latin mono, always uppercase --------- */
+.chrome {
+  font-family: var(--f-mono);
+  font-size: var(--t-meta);
+  font-weight: 400;
+  line-height: var(--lh-chrome);
+  letter-spacing: var(--tr-chrome);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  /* chrome is Latin regardless of page direction */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.chrome--label {
+  font-size: var(--t-label);
+  font-weight: 500;
+}
+.chrome--info {
+  font-size: var(--t-info);
+}
+.chrome--legend {
+  font-size: var(--t-legend);
+}
+
+/* A metadata slot whose value may be Arabic (a tag, a category the author
+   typed) cannot use the Latin mono voice: it would fall back to a random
+   system face and be forced LTR. It keeps chrome's SIZE and role, but takes
+   the page-language font and direction. */
+.chrome--intl {
+  font-family: var(--f-ui);
+  letter-spacing: var(--tr-ui);
+  text-transform: var(--case-ui);
+  direction: inherit;
+  /* Arabic has no small-size headroom: 10px is legible in Latin mono and not
+     in an Arabic face. Floor it without affecting the larger variants. */
+  font-size: max(1em, 12px);
+}
+
+/* ---- display ------------------------------------------------------------ */
+.display {
+  font-family: var(--f-display);
+  font-weight: 500;
+  line-height: var(--lh-disp);
+  letter-spacing: var(--tr-disp);
+  text-transform: var(--case-disp);
+  text-wrap: balance;
+}
+
+.display--hero {
+  font-size: var(--hero-size);
+  font-weight: var(--hero-weight, 400);
+  /* line breaks are authored in the copy, not computed */
+  text-wrap: initial;
+}
+.display--heading {
+  font-size: var(--heading-size);
+}
+.display--sub {
+  font-size: var(--t-subheading);
+  line-height: var(--lh-sub);
+  text-transform: none;
+}
+.display--title {
+  font-size: var(--t-title);
+  line-height: var(--lh-ttl);
+  text-transform: none;
+}
+
+/* Latin hero: thin + condensed, as in the reference (its h1 is weight 200).
+   Arabic keeps 400 — Reem Kufi at 200 loses too much stroke to hold up. */
+[lang='en'],
+[dir='ltr'] {
+  --hero-weight: 200;
+}
+
+/* ---- reading ----------------------------------------------------------- */
+.read {
+  font-family: var(--f-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-reading);
+  font-weight: 400;
+  text-wrap: pretty;
+}
+
+.read--lead {
+  font-size: calc(var(--t-read) * 1.15);
+}
+
+/* ============================================================================
+   PROSE
+   The reading surface. The reference demonstrates nothing here — its whole page
+   carries about fifteen sentences of body copy. This is invented.
+   ========================================================================= */
+
+.prose {
+  font-family: var(--f-read);
+  font-size: var(--t-read);
+  line-height: var(--lh-reading);
+  max-width: var(--measure);
+}
+
+/* Arabic prose gets a shorter measure: at 20px Amiri, 68ch overruns comfort. */
+[lang='ar'] .prose,
+[dir='rtl'] .prose {
+  max-width: 62ch;
+}
+
+.prose > * + * {
+  margin-block-start: 1.15em;
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--f-display);
+  line-height: var(--lh-ttl);
+  letter-spacing: var(--tr-disp);
+  margin-block-start: 2.2em;
+  margin-block-end: 0.6em;
+  text-wrap: balance;
+}
+
+.prose h2 {
+  font-size: calc(var(--t-read) * 1.9);
+}
+.prose h3 {
+  font-size: calc(var(--t-read) * 1.45);
+}
+.prose h4 {
+  font-size: calc(var(--t-read) * 1.15);
+  text-transform: none;
+}
+
+/* A hairline above each h2 — the section break, restated at prose scale. */
+.prose h2::before {
+  content: '';
+  display: block;
+  inline-size: 100%;
+  block-size: 0;
+  box-shadow: 0 var(--hair) 0 0 var(--line);
+  margin-block-end: 0.7em;
+}
+
+.prose a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+  transition: background var(--dur) var(--ease);
+}
+.prose a:hover {
+  background: var(--accent);
+  color: var(--ink);
+  text-decoration-color: transparent;
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose blockquote {
+  margin-inline: 0;
+  padding-inline-start: var(--s-xl);
+  /* logical: becomes a right border under RTL with no extra rule */
+  box-shadow: inset var(--hair) 0 0 0 var(--line-strong);
+  font-style: normal;
+  opacity: 0.85;
+}
+
+[dir='rtl'] .prose blockquote {
+  box-shadow: inset calc(-1 * var(--hair)) 0 0 0 var(--line-strong);
+}
+
+.prose ul,
+.prose ol {
+  padding-inline-start: 1.4em;
+}
+.prose li + li {
+  margin-block-start: 0.4em;
+}
+.prose ul {
+  list-style: none;
+}
+.prose ul > li {
+  position: relative;
+}
+.prose ul > li::before {
+  content: '—';
+  position: absolute;
+  inset-inline-start: -1.4em;
+  opacity: 0.5;
+}
+
+.prose hr {
+  border: 0;
+  block-size: 0;
+  box-shadow: 0 var(--hair) 0 0 var(--line);
+  margin-block: 2.5em;
+}
+
+.prose code {
+  font-family: var(--f-mono);
+  font-size: 0.85em;
+  background: var(--fill-soft);
+  padding: 0.15em 0.4em;
+}
+
+.prose pre {
+  font-family: var(--f-mono);
+  font-size: var(--t-small);
+  padding: var(--s-l);
+  overflow-x: auto;
+  /* code is always LTR, even mid-Arabic-essay */
+  direction: ltr;
+  text-align: start;
+  box-shadow: inset 0 0 0 var(--hair) var(--line);
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+
+.prose img {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+/* Latin fragments inside Arabic prose keep their own font and direction. */
+.prose :lang(en) {
+  font-family: var(--f-read-la);
+}

@@ -1,0 +1,155 @@
+/* ============================================================================
+   TOKENS
+   One hue, one paper. Every tint is derived, never hardcoded.
+   ========================================================================= */
+
+:root {
+  /* ---- the two colors ------------------------------------------------- */
+  --ink: #7900f2;      /* indigo. lapis lazuli — the pigment of illumination */
+  --paper: #f2f2f2;    /* never #fff */
+  --accent: #f2f200;   /* selection only */
+
+  /* The construction rule, inherited from the reference: every palette color
+     is a corner of the RGB cube at 242. Kept here for future use. */
+  --c-red: #f20000;
+  --c-orange: #f27900;
+  --c-yellow: #f2f200;
+  --c-green: #00f279;
+  --c-cyan: #00f2f2;
+  --c-indigo: #7900f2;
+  --c-magenta: #f200f2;
+
+  /* ---- tint ramp (derived) -------------------------------------------- */
+  --mix-dark: #000;
+  --mix-light: #fff;
+
+  --ink-d05: color-mix(in srgb, var(--ink) 95%, var(--mix-dark));
+  --ink-d10: color-mix(in srgb, var(--ink) 90%, var(--mix-dark));
+  --ink-d20: color-mix(in srgb, var(--ink) 80%, var(--mix-dark));
+  --ink-d40: color-mix(in srgb, var(--ink) 60%, var(--mix-dark));
+  --ink-d60: color-mix(in srgb, var(--ink) 40%, var(--mix-dark));
+  --ink-l10: color-mix(in srgb, var(--ink) 90%, var(--mix-light));
+  --ink-l20: color-mix(in srgb, var(--ink) 80%, var(--mix-light));
+  --ink-l40: color-mix(in srgb, var(--ink) 60%, var(--mix-light));
+
+  --paper-d05: color-mix(in srgb, var(--paper) 95%, var(--mix-dark));
+  --paper-d10: color-mix(in srgb, var(--paper) 90%, var(--mix-dark));
+
+  /* ---- the fluid scalar ------------------------------------------------
+     The reference's core layout primitive: one scalar, so art and spacing can
+     be written as the unitless numbers from a design file — calc(210 * var(--u)).
+     Based on vw rather than cqw so it needs no containment context. */
+  --u: max(calc(100vw / 2360), 0.3px);
+  --vsq: calc(0.5vw + 0.5vh);
+
+  /* ---- type scale ------------------------------------------------------
+     Same ladder as the reference. Hero and heading are fluid. */
+  --t-hero: clamp(3.75rem, 4rem + 3vw, 108px);
+  --t-heading: clamp(2.75rem, 2.5rem + 2.2vw, 80px);
+  --t-subheading: clamp(2rem, 1.75rem + 1.2vw, 48px);
+  --t-title: clamp(1.5rem, 1.4rem + 0.6vw, 36px);
+  --t-subtitle: 20px;
+  --t-body: 16px;
+  --t-label: 14px;
+  --t-small: 13px;
+  --t-meta: 12px;
+  --t-info: 10px;
+  --t-legend: 9px;
+
+  /* line heights. Latin display locks to 1.0 — lines fuse into a slab. */
+  --lh-display: 1;
+  --lh-title: 1.1;
+  --lh-read: 1.6;
+  --lh-chrome: 1;
+
+  /* tracking. Display goes negative, chrome goes wide. */
+  --tr-display: -0.02em;
+  --tr-chrome: 0.1em;
+
+  /* ---- layout ---------------------------------------------------------- */
+  /* The page SHELL. Above this width the whole page stops growing and the ink
+     background shows as broad edges either side, so the content reads as one
+     centred column. Measured off the reference at 1920: every section is
+     exactly 1440px wide, centred, leaving 235px of ink on each side. */
+  --shell: 1440px;
+
+  --col: 1080px;         /* content column inside the shell */
+  --gutter: 80px;        /* side padding */
+  --container: calc(var(--col) + 2 * var(--gutter));
+  --measure: 68ch;       /* reading measure — the reference has no equivalent */
+
+  --frame: 5px;          /* the fixed border drawn over everything */
+
+  /* ---- spacing --------------------------------------------------------- */
+  --s-2xs: 0.125rem;
+  --s-xs: 0.25rem;
+  --s-s: 0.5rem;
+  --s-m: 0.75rem;
+  --s-l: 1rem;
+  --s-xl: 1.5rem;
+  --s-2xl: 2rem;
+  --s-3xl: 2.5rem;
+  --s-4xl: 3.5rem;
+  --band: clamp(4rem, 8vw, 7.5rem);   /* vertical band padding */
+
+  /* ---- surface grids --------------------------------------------------- */
+  --grid-gap: 30px;
+  --grid-gap-row: 80px;
+
+  /* ---- hairlines & shadows ---------------------------------------------
+     Borders are drawn with inset box-shadow so they never affect layout.
+     Shadows are hue-tinted, never black. */
+  --hair: 0.5px;
+  --shadow-ink: var(--ink-d60);
+  --sh-lift: 0 2px 8px 0 var(--shadow-ink);
+  --sh-press: inset 0 1px 4px 0 var(--shadow-ink);
+  --sh-overlay: 0 2.5px 8.5px 0 var(--shadow-ink);
+
+  /* ---- texture --------------------------------------------------------- */
+  --noise-tile: 12.8rem;
+  --grain-opacity: 0.035;
+
+  /* ---- motion ---------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 0.2s;
+}
+
+/* ============================================================================
+   SURFACES
+   The page alternates ink and paper, and the inversion IS the section break.
+   Everything downstream reads --bg and --fg, so a band only sets these two.
+   ========================================================================= */
+
+.s-ink {
+  --bg: var(--ink);
+  --fg: var(--paper);
+  --line: color-mix(in srgb, var(--paper) 25%, transparent);
+  --line-strong: var(--paper);
+  --fill-soft: color-mix(in srgb, var(--paper) 12%, transparent);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.s-paper {
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --line: color-mix(in srgb, var(--ink) 25%, transparent);
+  --line-strong: var(--ink);
+  --fill-soft: color-mix(in srgb, var(--ink) 8%, transparent);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+@media (max-width: 1100px) {
+  :root {
+    --gutter: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --gutter: 24px;
+    --frame: 0px;
+    --grid-gap-row: 56px;
+  }
+}
