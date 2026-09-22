@@ -1,0 +1,8 @@
+---
+import Base from '../../../layouts/Base.astro';
+import BooksIndex from '../../../components/BooksIndex.astro';
+import { COPY } from '../../../data/site';
+---
+<Base lang="ar" title={COPY.ar.library} navSurface="paper">
+  <BooksIndex lang="ar" />
+</Base>

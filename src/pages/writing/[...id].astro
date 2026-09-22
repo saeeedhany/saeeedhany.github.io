@@ -1,0 +1,42 @@
+---
+import { getCollection, render } from 'astro:content';
+import Essay from '../../layouts/Essay.astro';
+import { slugOf } from '../../data/site';
+
+/**
+ * One canonical URL per post, for both languages: /writing/<slug>.
+ *
+ * A post exists in exactly one language, so mirroring it under /en/ as well
+ * would serve the same Arabic essay wrapped in English chrome at a second
+ * URL. Instead the page renders in the post's OWN language — chrome, direction
+ * and typography all follow the frontmatter — and both language indexes link
+ * here.
+ *
+ * The slug must come from slugOf(), the same helper the hrefs use. Computing
+ * it separately here is exactly what broke every link before.
+ */
+export async function getStaticPaths() {
+  const entries = await getCollection('writing', (e) => !e.data.draft);
+  const sorted = [...entries].sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+  return sorted.map((entry, i) => ({
+    params: { id: slugOf(entry.id) },
+    props: { entry, index: String(sorted.length - i).padStart(2, '0') },
+  }));
+}
+
+const { entry, index } = Astro.props;
+const { Content } = await render(entry);
+const POOL = ['fixed-stars', 'pharmacy', 'astrolabe', 'optics', 'anatomy', 'elephant-clock'];
+---
+
+<Essay
+  lang={entry.data.lang}
+  title={entry.data.title}
+  date={entry.data.date}
+  description={entry.data.description}
+  tags={[...entry.data.tags]}
+  plate={entry.data.plate ?? POOL[(Number(index) - 1) % POOL.length]}
+  index={index}
+>
+  <Content />
+</Essay>

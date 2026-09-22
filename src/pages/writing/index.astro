@@ -1,0 +1,8 @@
+---
+import Base from '../../layouts/Base.astro';
+import WritingIndex from '../../components/WritingIndex.astro';
+import { COPY } from '../../data/site';
+---
+<Base lang="en" title={COPY.en.writing} description={COPY.en.lead} navSurface="paper">
+  <WritingIndex lang="en" />
+</Base>

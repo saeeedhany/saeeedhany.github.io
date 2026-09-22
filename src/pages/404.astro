@@ -1,0 +1,17 @@
+---
+import Base from '../layouts/Base.astro';
+import { COPY } from '../data/site';
+const t = COPY.en;
+---
+<Base lang="en" title="404" navSurface="ink">
+  <section class="band s-ink" style="min-height: 60vh; display:grid; align-content:center">
+    <div class="container">
+      <p class="chrome" style="opacity:.6; margin-block-end: var(--s-l)">404</p>
+      <h1 class="display display--heading">{t.notFound}</h1>
+      <p class="read read--lead" style="margin-block-start: var(--s-l); opacity:.85">{t.notFoundLead}</p>
+      <p style="margin-block-start: var(--s-2xl)">
+        <a class="btn btn--solid" href="/">{t.backHome}</a>
+      </p>
+    </div>
+  </section>
+</Base>

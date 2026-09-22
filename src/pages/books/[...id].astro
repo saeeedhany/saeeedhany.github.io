@@ -1,0 +1,80 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { COPY, slugOf } from '../../data/site';
+
+export async function getStaticPaths() {
+  const books = await getCollection('books', (e) => !e.data.draft);
+  return books.map((entry) => ({
+    // the category folder is metadata, not part of the slug. Must use the
+    // same helper the hrefs use, or links drift and 404.
+    params: { id: slugOf(entry.id) },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const lang = 'en' as const;
+const t = COPY[lang];
+const b = entry.data;
+const rating = b.rating ? '▪'.repeat(b.rating) + '▫'.repeat(5 - b.rating) : null;
+---
+
+<Base lang={lang} title={b.title} description={b.description} navSurface="ink">
+  <article>
+    <header class="band band--tight s-ink">
+      <div class="container">
+        <p class="essay__meta chrome" style="margin-block-end: var(--s-xl)">
+          <span class="chrome--intl">{t.categories[b.category]}</span>
+          <span class="chrome--intl" data-status={b.status}>{t.status[b.status]}</span>
+          {b.year && <span>{String(b.year)}</span>}
+          {rating && <span aria-label={`${b.rating}/5`}>{rating}</span>}
+        </p>
+
+        <div class="essay__head">
+          <h1 class="display display--heading" dir="auto">{b.title}</h1>
+          <p class="read read--lead" style="opacity:.85" dir="auto">{b.author}</p>
+        </div>
+
+        {
+          b.tags.length > 0 && (
+            <div class="tags" style="margin-block-start: var(--s-xl)">
+              {b.tags.map((tag) => (
+                <span class="pill chrome chrome--info">{tag}</span>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    </header>
+
+    <div class="band s-paper">
+      <div class="container">
+        {b.description && <p class="read read--lead" style="max-width: 52ch">{b.description}</p>}
+
+        {
+          b.recommended && b.recommendNote && (
+            <aside
+              class="boxed"
+              style="margin-block: var(--s-2xl); padding: var(--s-xl); max-width: 62ch"
+            >
+              <p class="chrome chrome--label" style="margin-block-end: var(--s-s); opacity:.7">
+                {lang === 'ar' ? 'يُنصح به' : 'Recommended'}
+              </p>
+              <p class="read">{b.recommendNote}</p>
+            </aside>
+          )
+        }
+
+        <div class="prose" style="margin-block-start: var(--s-2xl)">
+          <Content />
+        </div>
+
+        <p style="margin-block-start: var(--s-4xl)">
+          <a class="btn btn--outline" href="/books">{t.allBooks}</a>
+        </p>
+      </div>
+    </div>
+  </article>
+</Base>
