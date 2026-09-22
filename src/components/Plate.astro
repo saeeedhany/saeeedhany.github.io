@@ -1,0 +1,53 @@
+---
+import credits from '../data/plates.json';
+import { COPY, type Lang } from '../data/site';
+
+interface Props {
+  /** plate slug, e.g. "optics" — resolves to /plates/<slug>.png */
+  name: string;
+  lang: Lang;
+  alt?: string;
+  shape?: 'square' | 'wide' | 'portrait';
+  /** render the source credit beneath (off inside dense grids) */
+  credit?: boolean;
+  parallax?: boolean;
+  /** above-the-fold plates must load eagerly — this is the LCP image */
+  eager?: boolean;
+  class?: string;
+}
+
+const {
+  name,
+  lang,
+  alt = '',
+  shape = 'square',
+  credit = false,
+  parallax = true,
+  eager = false,
+  class: extra = '',
+} = Astro.props;
+
+const source = (credits as Record<string, string>)[name];
+const t = COPY[lang];
+---
+
+<figure class={`${parallax ? 'px' : ''} ${extra}`.trim()} style="margin: 0">
+  <div class={`plate plate--${shape}`}>
+    <img
+      src={`/plates/${name}.png`}
+      alt={alt}
+      loading={eager ? 'eager' : 'lazy'}
+      fetchpriority={eager ? 'high' : undefined}
+      decoding={eager ? 'sync' : 'async'}
+      width="1024"
+      height="1024"
+    />
+  </div>
+  {
+    credit && source && (
+      <figcaption class="plate-credit chrome chrome--legend">
+        {t.plateCredit}: {source}
+      </figcaption>
+    )
+  }
+</figure>

@@ -1,0 +1,190 @@
+---
+import { getCollection } from 'astro:content';
+import CvSelector from './CvSelector.astro';
+import Plate from './Plate.astro';
+import { baseFor, COPY, EPIGRAPH, CATEGORY_ORDER, fmtDate, slugOf, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const base = baseFor(lang);
+
+/**
+ * Both languages, always. The Arabic and English posts are different pieces,
+ * not translations of each other, so filtering by the current site language
+ * would hide half the writing. Each entry carries an AR/EN badge instead.
+ */
+const writing = (await getCollection('writing', (e) => !e.data.draft)).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+);
+
+const latest = writing.slice(0, 6);
+
+const books = (await getCollection('books', (e) => !e.data.draft)).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+
+// Only non-empty shelves are rendered: an empty column in an auto-fit grid
+// reads as a layout bug, not as honesty. The full taxonomy is still declared
+// by the pill row above the heading.
+const shelves = CATEGORY_ORDER.map((cat) => ({
+  cat,
+  items: books.filter((b) => b.data.category === cat),
+})).filter((s) => s.items.length > 0);
+
+/** Plates cycle deterministically, so the grid looks composed before any post
+ *  has been annotated with its own `plate`. */
+const POOL = ['fixed-stars', 'pharmacy', 'astrolabe', 'optics', 'anatomy', 'elephant-clock'];
+const plateFor = (entry: (typeof writing)[number], i: number) =>
+  entry.data.plate ?? POOL[i % POOL.length];
+
+const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '');
+---
+
+<!-- ===== BAND 1 — THESIS & CV ===========================================
+     Two columns: copy on the inline-start side, plate on the inline-end side.
+     This is the reference's hero composition.
+     ===================================================================== -->
+<section class="band s-ink hero">
+  <div class="container">
+    <div class="hero__grid">
+      <div class="hero__copy">
+        <h1 class="display display--hero">
+          {t.heroLines.map((line, i) => <Fragment>{i > 0 && <br />}{line}</Fragment>)}
+        </h1>
+        <p class="read read--lead" style="max-width: 42ch; margin-block-start: var(--s-2xl)">
+          {t.lead}
+        </p>
+        <div style="margin-block-start: var(--s-3xl)">
+          <CvSelector lang={lang} />
+        </div>
+      </div>
+
+      <div class="hero__art">
+        <Plate name="elephant-clock" lang={lang} shape="square" parallax={false} eager={true} alt="" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BAND 2 — WRITING =============================================== -->
+<section class="band s-paper" id="writing">
+  <div class="container">
+    <div class="head">
+      <div class="head__title">
+        <h2 class="display display--heading">{t.writing}</h2>
+        <svg class="head__glyph" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <path d="M3 1.5h7l3 3v10H3z" /><path d="M9.5 1.5v3.5H13" /><path d="M5.5 8h5M5.5 11h5" />
+        </svg>
+      </div>
+      <a class="head__link chrome" href={`${base}/writing`}>{t.readAll}</a>
+    </div>
+
+    {
+      latest.length === 0 ? (
+        <p class="read" style="opacity:.6">
+          {lang === 'ar' ? 'لا يوجد شيء منشور بعد.' : 'Nothing published yet.'}
+        </p>
+      ) : (
+        <div class="writing-grid">
+          {latest.map((entry, i) => (
+            <article class="entry">
+              <a href={`/writing/${slugOf(entry.id)}`} aria-hidden="true" tabindex="-1">
+                <Plate name={plateFor(entry, i)} lang={lang} shape="square" />
+              </a>
+              <p class="entry__meta chrome">
+                <span class="entry__index">#{String(i + 1)}</span>
+                <span>{fmtDate(entry.data.date)}</span>
+                <span class="lang-badge">{entry.data.lang}</span>
+              </p>
+              <h3 class="display display--sub" lang={entry.data.lang}>
+                <a class="entry__title" href={`/writing/${slugOf(entry.id)}`} dir="auto">
+                  {entry.data.title}
+                </a>
+              </h3>
+              {entry.data.description && (
+                <p class="read entry__desc" lang={entry.data.lang} dir="auto">
+                  {entry.data.description}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</section>
+
+<!-- ===== BAND 3 — EPIGRAPH ============================================== -->
+<section class="band quote s-ink">
+  <div class="quote__plate" aria-hidden="true">
+    <img src="/plates/optics-diagram.png" alt="" loading="lazy" decoding="async" />
+  </div>
+  <div class="container">
+    <div class="quote__inner">
+      <blockquote class="display quote__text" style="text-transform: none">
+        {EPIGRAPH[lang].text}
+      </blockquote>
+      <p class="quote__attr chrome">{EPIGRAPH[lang].attr}</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BAND 4 — LIBRARY =============================================== -->
+<section class="band s-paper" id="library">
+  <div class="container">
+    <div class="pills">
+      {
+        CATEGORY_ORDER.map((c) => (
+          <span class="pill chrome chrome--info chrome--intl">{t.categories[c]}</span>
+        ))
+      }
+    </div>
+
+    <div class="head">
+      <div class="head__title">
+        <h2 class="display display--heading">{t.library}</h2>
+        <svg class="head__glyph" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <path d="M2 2h4v12H2zM6 2h4v12H6zM10.5 3l3 11" />
+        </svg>
+      </div>
+      <a class="head__link chrome" href={`${base}/books`}>{t.allBooks}</a>
+    </div>
+
+    <div class="library">
+      {
+        shelves.map((shelf) => (
+          <div class="shelf">
+            <div class="shelf__head">
+              <h3 class="chrome chrome--label chrome--intl">{t.categories[shelf.cat]}</h3>
+              <span class="shelf__count chrome">{String(shelf.items.length).padStart(2, '0')}</span>
+            </div>
+            <div class="shelf__list">
+              {shelf.items.map((b) => (
+                <article class="book">
+                  <h4 class="book__title">
+                    <a href={`${base}/books/${slugOf(b.id)}`} dir="auto">{b.data.title}</a>
+                  </h4>
+                  <p class="book__line chrome chrome--info">
+                    <span dir="auto">{b.data.author.split(',')[0]}</span>
+                    {b.data.year && <span>· {String(b.data.year)}</span>}
+                  </p>
+                  <p class="book__line chrome chrome--info">
+                    <span class="book__status chrome--intl" data-status={b.data.status}>
+                      {t.status[b.data.status]}
+                    </span>
+                    {b.data.rating && (
+                      <span aria-label={`${b.data.rating}/5`}>{rating(b.data.rating)}</span>
+                    )}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

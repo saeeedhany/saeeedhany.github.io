@@ -1,0 +1,45 @@
+---
+import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const mark = SITE.mark[lang];
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
+---
+
+<!--
+  Hidden from assistive tech: it duplicates the page's own <header>, which is
+  always in the DOM and reachable. Showing both would put every nav link in the
+  tab order twice.
+-->
+<div class="navbar" data-navbar data-shown="false" aria-hidden="true">
+  <div class="navbar__inner s-paper">
+    <div class="container">
+      <div class="navbar__row">
+        <a class="navbar__mark" href={baseFor(lang) || '/'} tabindex="-1">
+          {mark[0]} {mark[1]}
+        </a>
+
+        <nav class="navbar__links">
+          {
+            NAV.map((item) => (
+              <a
+                class="nav__link ui"
+                href={item.href[lang]}
+                tabindex="-1"
+                aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
+              >
+                {item.label[lang]}
+              </a>
+            ))
+          }
+          <a class="nav__link chrome" href={t.otherLangHref} tabindex="-1">{t.otherLang}</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>

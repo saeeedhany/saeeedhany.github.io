@@ -1,0 +1,174 @@
+---
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/type.css';
+import '../styles/components.css';
+
+import Nav from '../components/Nav.astro';
+import StickyNav from '../components/StickyNav.astro';
+import Footer from '../components/Footer.astro';
+import { COPY, SITE, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description?: string;
+  /** surface of the first band, so the nav can invert to match */
+  navSurface?: 'ink' | 'paper';
+}
+
+const { lang, title, description, navSurface = 'ink' } = Astro.props;
+const t = COPY[lang];
+const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
+---
+
+<!doctype html>
+<html lang={lang} dir={t.dir}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <meta name="color-scheme" content="only light" />
+    <meta name="theme-color" content="#7900f2" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site ?? 'https://saeeedhany.github.io')} />
+    <link rel="alternate" hreflang={lang === 'ar' ? 'en' : 'ar'} href={t.otherLangHref} />
+    <meta property="og:title" content={fullTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+  </head>
+
+  <body>
+    <!-- the fixed ink border drawn over everything -->
+    <div class="frame" aria-hidden="true"></div>
+
+    <!--
+      The footer sits OUTSIDE .page and is fixed behind it. .page reserves a
+      gap of exactly --footer-h at its end; scrolling into that gap slides the
+      content up off the footer and uncovers it.
+    -->
+    <Footer lang={lang} reveal={true} />
+
+    <!-- condensed nav that drops in once the hero is past -->
+    <StickyNav lang={lang} />
+
+    <div class="page">
+      <Nav lang={lang} surface={navSurface} />
+      <main id="main">
+        <slot />
+      </main>
+    </div>
+
+    <!-- tiled grain, replacing the reference's WebGL canvas -->
+    <div class="grain" aria-hidden="true"></div>
+
+    <script>
+      import Lenis from 'lenis';
+
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+      // ---- smooth scroll ---------------------------------------------------
+      // Lenis drives the real scroll position (it does not transform a
+      // wrapper), so the fixed frame, grain and footer keep working.
+      let lenis: Lenis | null = null;
+      if (!reduce.matches) {
+        lenis = new Lenis({
+          duration: 1.05,
+          easing: (x: number) => 1 - Math.pow(1 - x, 3),
+          smoothWheel: true,
+          // touch devices already have momentum scrolling; hijacking it makes
+          // the page feel worse, not better
+          syncTouch: false,
+        });
+
+        const raf = (time: number) => {
+          lenis!.raf(time);
+          requestAnimationFrame(raf);
+        };
+        requestAnimationFrame(raf);
+
+        // in-page anchors must go through Lenis or they jump
+        for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) {
+          a.addEventListener('click', (e) => {
+            const id = a.getAttribute('href')!.slice(1);
+            const target = id && document.getElementById(id);
+            if (!target) return;
+            e.preventDefault();
+            lenis!.scrollTo(target, { offset: -24 });
+          });
+        }
+      }
+
+      // ---- scroll-driven custom properties ---------------------------------
+      // Same approach as the reference: JS writes numbers into CSS variables,
+      // CSS owns every visual decision. No animation library.
+      const plates = Array.from(document.querySelectorAll<HTMLElement>('.px'));
+      const footer = document.querySelector<HTMLElement>('.footer--reveal');
+      const navbar = document.querySelector<HTMLElement>('[data-navbar]');
+      const root = document.documentElement;
+
+      // Show the sticky nav once the page's own header is well out of view,
+      // and hide it again near the top so it never covers the real header.
+      let navShown = false;
+
+      const footerHeight = () =>
+        footer ? footer.getBoundingClientRect().height : 0;
+
+      const update = () => {
+        const vh = innerHeight;
+
+        if (navbar) {
+          const show = scrollY > vh * 0.9;
+          if (show !== navShown) {
+            navShown = show;
+            navbar.dataset.shown = String(show);
+          }
+        }
+
+        // footer reveal: how far into the reserved end-gap we've scrolled
+        if (footer) {
+          const fh = footerHeight();
+          const docH = document.documentElement.scrollHeight;
+          const gapTop = docH - fh;
+          const seen = scrollY + vh - gapTop;
+          const p = fh > 0 ? Math.max(0, Math.min(1, seen / fh)) : 0;
+          root.style.setProperty('--footer-progress', p.toFixed(4));
+          footer.setAttribute('aria-hidden', p < 0.05 ? 'true' : 'false');
+        }
+
+        if (reduce.matches) return;
+
+        for (const el of plates) {
+          const r = el.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200) continue;
+          const progress = 1 - (r.top + r.height / 2) / (vh / 2 + r.height / 2);
+          const drift = Math.max(-1, Math.min(1, progress)) * 34;
+          el.style.setProperty('--py', `${drift.toFixed(2)}px`);
+        }
+      };
+
+      if (lenis) {
+        // drive off Lenis's own loop so the values match what is painted
+        lenis.on('scroll', update);
+      } else {
+        let queued = false;
+        addEventListener(
+          'scroll',
+          () => {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(() => {
+              queued = false;
+              update();
+            });
+          },
+          { passive: true },
+        );
+      }
+
+      addEventListener('resize', update, { passive: true });
+      update();
+    </script>
+  </body>
+</html>

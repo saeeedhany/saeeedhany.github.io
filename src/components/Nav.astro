@@ -1,0 +1,60 @@
+---
+import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  surface?: 'ink' | 'paper';
+}
+const { lang, surface = 'ink' } = Astro.props;
+const t = COPY[lang];
+const mark = SITE.mark[lang];
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+
+const half = Math.ceil(NAV.length / 2);
+const left = NAV.slice(0, half);
+const right = NAV.slice(half);
+
+const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
+---
+
+<header class={`nav s-${surface}`}>
+  <div class="container">
+    <div class="nav__inner">
+      <nav class="nav__links" aria-label={lang === 'ar' ? 'رئيسي' : 'Primary'}>
+        {
+          left.map((item) => (
+            <a
+              class="nav__link ui"
+              href={item.href[lang]}
+              aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
+            >
+              {item.label[lang]}
+            </a>
+          ))
+        }
+      </nav>
+
+      <a class="nav__mark" href={baseFor(lang) || '/'}>
+        {mark[0]}<br />{mark[1]}
+      </a>
+
+      <nav class="nav__links nav__links--end" aria-label={lang === 'ar' ? 'ثانوي' : 'Secondary'}>
+        {
+          right.map((item) => (
+            <a
+              class="nav__link ui"
+              href={item.href[lang]}
+              aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
+            >
+              {item.label[lang]}
+            </a>
+          ))
+        }
+        <!-- the language switch is a token, not prose: it keeps the mono voice -->
+        <a class="nav__link chrome" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
+          {t.otherLang}
+        </a>
+      </nav>
+    </div>
+  </div>
+</header>

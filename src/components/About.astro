@@ -1,0 +1,98 @@
+---
+import Plate from './Plate.astro';
+import { SITE, EPIGRAPH, COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+
+const body = {
+  ar: {
+    heading: 'عن',
+    lead: 'أبني أنظمة، وأدوات سطر أوامر، وأشياء منخفضة المستوى.',
+    paras: [
+    'يهمّني أمر أنظمة التشغيل، والعمارة الحاسوبية، ولغة C — وأحياناً، حين يحضر المزاج، أعمل على الويب ببساطة.',
+    'معظمُ ما أصنعه يبدأ كطريقةٍ لفهم شيءٍ ما بصورةٍ أفضل، لا كمنتَج. هذا ليس تواضعاً؛ إنه الطريقة التي أتعلّم بها: لا أثق في فهمي لشيءٍ حتى أبنيه.',
+    'وهذه الصفحة، والكتابةُ التي فيها، امتدادٌ لنفس العادة — التحقُّق بدلاً من التسليم.',
+    ],
+    contactHeading: 'للتواصل',
+  },
+  en: {
+    heading: 'About',
+    lead: 'I build systems, CLI tools, and low-level things.',
+    paras: [
+      "I'm interested in operating systems, computer architecture, and C — and, when I feel like it, simple web work too.",
+      "Most of what I make starts as a way to understand something better, not as a product. That isn't modesty; it's how I learn. I don't trust that I understand a thing until I've built it.",
+      'This page, and the writing on it, is an extension of the same habit — verifying instead of deferring.',
+    ],
+    contactHeading: 'Contact',
+  },
+}[lang];
+---
+
+<section class="band s-ink">
+  <div class="container">
+    <h1 class="display display--heading">{body.heading}</h1>
+    <p class="read read--lead" style="max-width: 44ch; margin-block-start: var(--s-xl)">
+      {body.lead}
+    </p>
+  </div>
+</section>
+
+<section class="band s-paper">
+  <div class="container">
+    <div
+      style="display:grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap: var(--s-4xl); align-items:start"
+      class="about-split"
+    >
+      <div class="prose">
+        {body.paras.map((p) => <p>{p}</p>)}
+
+        <blockquote>
+          <p>{EPIGRAPH[lang].text}</p>
+          <p class="chrome" style="margin-block-start: var(--s-s); opacity:.7">
+            {EPIGRAPH[lang].attr}
+          </p>
+        </blockquote>
+      </div>
+
+      <Plate
+        name="portrait"
+        lang={lang}
+        shape="portrait"
+        credit={false}
+        eager={true}
+        alt={lang === 'ar' ? 'سعيد هاني' : 'Saeed Hany'}
+      />
+    </div>
+
+
+    <div style="margin-block-start: var(--s-4xl)">
+      <h2 class="chrome chrome--label" style="opacity:.7; margin-block-end: var(--s-l)">
+        {body.contactHeading}
+      </h2>
+      <div class="btn-bar">
+        <a class="btn btn--solid btn--mono" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+      </div>
+      <div class="btn-bar" style="margin-block-start: var(--s-s); gap: var(--s-s)">
+        {
+          SITE.social.map((s) => (
+            <a class="btn btn--outline btn--mono btn--sm" href={s.href} target="_blank" rel="me noopener">
+              {s.label}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @media (max-width: 900px) {
+    .about-split {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>

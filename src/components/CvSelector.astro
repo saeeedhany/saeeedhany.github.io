@@ -1,0 +1,105 @@
+---
+import { CVS, COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const anyReady = CVS.some((c) => c.ready);
+---
+
+<!--
+  The reference's three-tab OS selector (": macOS : | : Linux : | : Windows :"),
+  repurposed: three CVs for three audiences. Same component, real work.
+  Tab labels are prose, so they take the page-language UI voice; the filename
+  row is a technical token, so it stays Latin mono.
+-->
+<div class="cv" data-cv>
+  <p class="cv__label chrome">{t.cvLabel}</p>
+
+  <div class="cv__shell">
+    <div class="cv__tabs" role="tablist" aria-label={t.cvLabel}>
+      {
+        CVS.map((cv, i) => (
+          <button
+            class="cv__tab"
+            role="tab"
+            type="button"
+            id={`cv-tab-${cv.id}`}
+            data-cv-tab={cv.id}
+            data-file={cv.file}
+            data-ready={String(cv.ready)}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            tabindex={i === 0 ? 0 : -1}
+          >
+            <span class="cv__tab-name">{cv.name[lang]}</span>
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="cv__row">
+      <span class="cv__file" data-cv-file>{CVS[0].file.replace(/^\//, '')}</span>
+      <a
+        class="cv__get"
+        data-cv-get
+        href={CVS[0].ready ? CVS[0].file : undefined}
+        download
+        aria-disabled={CVS[0].ready ? undefined : 'true'}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M6 1v7M3 5.5 6 8.5 9 5.5M1.5 10.5h9" />
+        </svg>
+        {t.download}
+      </a>
+    </div>
+  </div>
+
+  {!anyReady && <p class="cv__note chrome chrome--info">{t.cvPending}</p>}
+</div>
+
+<script>
+  // Roving-tabindex tablist. ~30 lines of client JS for the whole page.
+  for (const root of document.querySelectorAll<HTMLElement>('[data-cv]')) {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cv-tab]'));
+    const fileEl = root.querySelector<HTMLElement>('[data-cv-file]');
+    const getEl = root.querySelector<HTMLAnchorElement>('[data-cv-get]');
+    if (!tabs.length || !fileEl || !getEl) continue;
+
+    const select = (next: HTMLButtonElement) => {
+      for (const tab of tabs) {
+        const on = tab === next;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+      }
+      const file = next.dataset.file ?? '';
+      const ready = next.dataset.ready === 'true';
+      fileEl.textContent = file.replace(/^\//, '');
+      if (ready) {
+        getEl.href = file;
+        getEl.removeAttribute('aria-disabled');
+      } else {
+        getEl.removeAttribute('href');
+        getEl.setAttribute('aria-disabled', 'true');
+      }
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => select(tab));
+      tab.addEventListener('keydown', (e) => {
+        // in an RTL tablist the arrow keys are visually mirrored
+        const rtl = getComputedStyle(root).direction === 'rtl';
+        const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
+        const back = rtl ? 'ArrowRight' : 'ArrowLeft';
+        let j = -1;
+        if (e.key === fwd) j = (i + 1) % tabs.length;
+        else if (e.key === back) j = (i - 1 + tabs.length) % tabs.length;
+        if (j < 0) return;
+        e.preventDefault();
+        select(tabs[j]);
+        tabs[j].focus();
+      });
+    });
+  }
+</script>

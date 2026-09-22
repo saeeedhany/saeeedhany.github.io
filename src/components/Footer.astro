@@ -1,0 +1,55 @@
+---
+import { SITE, COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  /** fixed behind the page, uncovered by scrolling into the reserved gap */
+  reveal?: boolean;
+}
+const { lang, reveal = false } = Astro.props;
+const t = COPY[lang];
+const ghost = lang === 'ar' ? 'سعيد' : 'SAEED';
+const year = new Date().getFullYear();
+---
+
+<footer class={`footer s-ink${reveal ? ' footer--reveal' : ''}`}>
+  <!-- full-bleed dithered plate behind everything, as in the reference -->
+  <div class="footer__bg" aria-hidden="true">
+    <img src="/plates/observatory.png" alt="" loading="lazy" decoding="async" />
+  </div>
+
+  <!-- the giant ghost wordmark, over the plate -->
+  <div class="ghost" aria-hidden="true">{ghost}</div>
+
+  <div class="container">
+    <div class="footer__inner">
+      <div>
+        <p class="display display--title">{t.tagline}</p>
+        <p class="chrome" style="margin-block-start: var(--s-s); opacity: .6">
+          © {year} · {lang === 'ar' ? 'SAEED HANY' : SITE.name.en}
+        </p>
+      </div>
+
+      <div class="footer__mid">
+        {
+          SITE.social.map((s) => (
+            <a
+              class="footer__social chrome"
+              href={s.href}
+              rel="me noopener"
+              target="_blank"
+              aria-label={s.label}
+            >
+              {s.glyph}
+            </a>
+          ))
+        }
+      </div>
+
+      <div class="footer__end">
+        <a class="ui" href={`mailto:${SITE.email}`}>{lang === 'ar' ? 'راسلني' : 'Email'}</a>
+        <span class="chrome" style="opacity: .6">{year}</span>
+      </div>
+    </div>
+  </div>
+</footer>

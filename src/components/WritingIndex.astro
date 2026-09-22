@@ -1,0 +1,65 @@
+---
+import { getCollection } from 'astro:content';
+import { COPY, fmtDate, slugOf, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+
+/**
+ * Every post, in both languages. The Arabic and English pieces are different
+ * writing, not translations, so the index lists all of them regardless of
+ * which language the site chrome is in. The AR/EN badge and per-row `lang`
+ * attribute carry the difference.
+ */
+const writing = (await getCollection('writing', (e) => !e.data.draft)).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+);
+---
+
+<section class="band s-paper">
+  <div class="container">
+    <div class="head">
+      <div class="head__title">
+        <h1 class="display display--heading">{t.writing}</h1>
+      </div>
+      <span class="head__link chrome" style="text-decoration: none">
+        {String(writing.length).padStart(2, '0')}
+      </span>
+    </div>
+
+    {
+      writing.length === 0 ? (
+        <p class="read" style="opacity:.6">
+          {lang === 'ar' ? 'لا يوجد شيء منشور بعد.' : 'Nothing published yet.'}
+        </p>
+      ) : (
+        <div class="rows">
+          {writing.map((entry, i) => (
+            <a class="row" href={`/writing/${slugOf(entry.id)}`} lang={entry.data.lang}>
+              <span class="row__meta chrome">
+                #{String(writing.length - i).padStart(2, '0')}
+                <span class="lang-badge">{entry.data.lang}</span>
+              </span>
+              <span>
+                <span class="row__title" dir="auto">{entry.data.title}</span>
+                {entry.data.description && (
+                  <span
+                    class="read"
+                    dir="auto"
+                    style="display:block; margin-block-start: var(--s-s); opacity:.8"
+                  >
+                    {entry.data.description}
+                  </span>
+                )}
+              </span>
+              <span class="row__meta chrome">{fmtDate(entry.data.date)}</span>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</section>
