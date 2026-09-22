@@ -1,0 +1,27 @@
+# ---- build output & dependencies ----
+dist/
+.astro/
+node_modules/
+
+# ---- local caches ----
+.cache/
+.remember/
+
+# ---- notes, research and working files (not part of the site) ----
+README.md
+docs/
+reference/
+
+# Source images for the dither pipeline. Anchored to the repo root with a
+# leading slash so they never match processed assets inside public/.
+/*.jpeg
+/*.jpg
+/*.png
+
+# ---- os / editor ----
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
