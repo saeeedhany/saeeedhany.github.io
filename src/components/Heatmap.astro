@@ -1,0 +1,221 @@
+---
+import { getContributions } from '../data/contributions';
+import { SITE, COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const cal = await getContributions(SITE.github);
+
+const L = {
+  en: { total: 'Total', longest: 'Longest streak', current: 'Current streak', best: 'Busiest day', days: 'days', hint: 'Use arrow keys to explore' },
+  ar: { total: 'المجموع', longest: 'أطول سلسلة', current: 'السلسلة الحالية', best: 'أنشط يوم', days: 'يوم', hint: 'استخدم الأسهم للتنقل' },
+}[lang];
+
+// Place every day on a week-column / weekday-row grid, like GitHub's own.
+const DAY = 86_400_000;
+const cells = [] as { date: string; count: number; level: number; row: number; col: number }[];
+const months = [] as { col: number; label: string }[];
+let cols = 0;
+
+if (cal) {
+  const first = new Date(cal.days[0].date + 'T00:00:00Z');
+  const origin = first.getTime() - first.getUTCDay() * DAY; // the Sunday on/before day 1
+  for (const d of cal.days) {
+    const at = new Date(d.date + 'T00:00:00Z');
+    const col = Math.floor((at.getTime() - origin) / (7 * DAY));
+    cells.push({ date: d.date, count: d.count, level: d.level, row: at.getUTCDay(), col });
+    cols = Math.max(cols, col + 1);
+    // month labels are metadata, so Latin mono on both language pages
+    if (at.getUTCDate() === 1) {
+      months.push({ col, label: at.toLocaleString('en', { month: 'short', timeZone: 'UTC' }) });
+    }
+  }
+  // label the partial first month only if it has room before the next label
+  const firstMonthCol = months[0]?.col ?? cols;
+  if (firstMonthCol >= 3) {
+    months.unshift({ col: 0, label: first.toLocaleString('en', { month: 'short', timeZone: 'UTC' }) });
+  }
+}
+
+const fmt = (n: number) => n.toLocaleString('en');
+---
+
+{
+  cal && (
+    <section class="hm" data-heatmap data-unit={t.contributions} aria-labelledby="hm-title">
+      <div class="hm__head">
+        <h2 id="hm-title" class="chrome chrome--label chrome--intl hm__title">{t.activity}</h2>
+        <a class="chrome hm__profile" href={`https://github.com/${SITE.github}`} target="_blank" rel="me noopener">
+          github.com/{SITE.github} ↗
+        </a>
+      </div>
+      <p class="read hm__lead">{t.activityLead}</p>
+
+      <dl class="hm__stats">
+        <div>
+          <dt class="chrome chrome--intl">{L.total}</dt>
+          <dd class="hm__num">{fmt(cal.total)}</dd>
+        </div>
+        <div>
+          <dt class="chrome chrome--intl">{L.longest}</dt>
+          <dd class="hm__num">{cal.longestStreak}<span class="chrome chrome--intl hm__unit">{L.days}</span></dd>
+        </div>
+        <div>
+          <dt class="chrome chrome--intl">{L.current}</dt>
+          <dd class="hm__num">{cal.currentStreak}<span class="chrome chrome--intl hm__unit">{L.days}</span></dd>
+        </div>
+        {cal.best && (
+          <div>
+            <dt class="chrome chrome--intl">{L.best}</dt>
+            <dd class="hm__num">
+              {cal.best.count}
+              <span class="chrome hm__unit">{cal.best.date}</span>
+            </dd>
+          </div>
+        )}
+      </dl>
+
+      <div class="hm__scroll" data-lenis-prevent>
+        <div class="hm__frame" style={`--cols: ${cols}`}>
+          <div class="hm__months chrome" aria-hidden="true">
+            {months.map((m) => <span style={`grid-column: ${m.col + 1}`}>{m.label}</span>)}
+          </div>
+          <div class="hm__weekdays chrome" aria-hidden="true">
+            <span style="grid-row: 2">Mon</span>
+            <span style="grid-row: 4">Wed</span>
+            <span style="grid-row: 6">Fri</span>
+          </div>
+
+          <div
+            class="hm__grid"
+            role="application"
+            tabindex="0"
+            aria-roledescription={lang === 'ar' ? 'تقويم المساهمات' : 'contribution calendar'}
+            aria-label={`${fmt(cal.total)} ${t.contributions}. ${L.hint}.`}
+            data-hm-grid
+          >
+            {cells.map((c, i) => (
+              <span
+                class="hm__cell"
+                data-i={i}
+                data-l={c.level}
+                data-c={c.count}
+                data-d={c.date}
+                style={`grid-area: ${c.row + 1} / ${c.col + 1}; --c: ${c.col}`}
+              />
+            ))}
+          </div>
+
+          <div class="hm__tip chrome" data-hm-tip aria-hidden="true" hidden />
+        </div>
+      </div>
+
+      <div class="hm__foot">
+        <span class="chrome hm__hint">{L.hint}</span>
+        <span class="hm__legend chrome" aria-hidden="true">
+          <span class="chrome--intl">{t.less}</span>
+          {[0, 1, 2, 3, 4].map((l) => <span class="hm__cell hm__cell--key" data-l={l} />)}
+          <span class="chrome--intl">{t.more}</span>
+        </span>
+      </div>
+
+      <p class="sr" aria-live="polite" data-hm-live />
+    </section>
+  )
+}
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-heatmap]')) {
+    const grid = root.querySelector<HTMLElement>('[data-hm-grid]')!;
+    const tip = root.querySelector<HTMLElement>('[data-hm-tip]')!;
+    const live = root.querySelector<HTMLElement>('[data-hm-live]')!;
+    const scroller = root.querySelector<HTMLElement>('.hm__scroll')!;
+    const cells = Array.from(grid.querySelectorAll<HTMLElement>('.hm__cell'));
+    const unit = root.dataset.unit ?? 'contributions';
+    let active = -1;
+
+    const label = (c: HTMLElement) => `${c.dataset.c} ${unit} · ${c.dataset.d}`;
+
+    const show = (c: HTMLElement) => {
+      tip.textContent = label(c);
+      tip.hidden = false;
+      const frame = tip.parentElement!.getBoundingClientRect();
+      const r = c.getBoundingClientRect();
+      tip.style.left = `${r.left - frame.left + r.width / 2}px`;
+      tip.style.top = `${r.top - frame.top}px`;
+    };
+    const hide = () => {
+      tip.hidden = true;
+    };
+
+    const select = (i: number) => {
+      if (active >= 0) cells[active].removeAttribute('data-active');
+      active = Math.max(0, Math.min(cells.length - 1, i));
+      const c = cells[active];
+      c.setAttribute('data-active', '');
+      show(c);
+      live.textContent = label(c);
+      // keep the selected day in view inside the horizontal scroller
+      const cr = c.getBoundingClientRect();
+      const sr = scroller.getBoundingClientRect();
+      if (cr.left < sr.left + 24 || cr.right > sr.right - 24) {
+        scroller.scrollLeft += cr.left - sr.left - sr.width / 2;
+      }
+    };
+
+    // pointer: one delegated listener rather than a listener per day
+    grid.addEventListener('pointerover', (e) => {
+      const c = (e.target as HTMLElement).closest<HTMLElement>('.hm__cell');
+      if (c) show(c);
+    });
+    grid.addEventListener('pointerleave', () => (active >= 0 ? show(cells[active]) : hide()));
+
+    // keyboard: arrows move a day (up/down) or a week (left/right)
+    grid.addEventListener('focus', () => select(active >= 0 ? active : cells.length - 1));
+    grid.addEventListener('blur', () => {
+      if (active >= 0) cells[active].removeAttribute('data-active');
+      hide();
+    });
+    grid.addEventListener('keydown', (e) => {
+      // Arrows move relative to the selected day. If nothing is selected yet
+      // (keydown can arrive without a preceding focus event), start from the
+      // most recent day rather than stepping from -1 and clamping to day one.
+      if (active < 0) active = cells.length - 1;
+      const steps: Record<string, number> = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 };
+      const step = steps[e.key];
+      if (step !== undefined) {
+        e.preventDefault();
+        select(active + step);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        select(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        select(cells.length - 1);
+      }
+    });
+
+    // open on the most recent weeks when the calendar is wider than the screen
+    scroller.scrollLeft = scroller.scrollWidth;
+
+    // columns fill in left to right the first time the calendar is seen
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) {
+      root.dataset.visible = 'true';
+    } else {
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            root.dataset.visible = 'true';
+            io.disconnect();
+          }
+        },
+        { threshold: 0.3 },
+      );
+      io.observe(grid);
+    }
+  }
+</script>

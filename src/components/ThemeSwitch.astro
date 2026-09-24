@@ -1,0 +1,32 @@
+---
+import { THEMES, COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  class?: string;
+}
+const { lang, class: extra = '' } = Astro.props;
+const t = COPY[lang];
+---
+
+<!--
+  Three swatches. Each shows its own theme's ink (fixed, not var(--ink)), so
+  the row always previews all three. State is applied by the script in
+  Base.astro: every [data-theme-set] on the page stays in sync.
+-->
+<div class={`theme-switch ${extra}`.trim()} role="group" aria-label={t.theme}>
+  {
+    THEMES.map((th, i) => (
+      <button
+        type="button"
+        class="swatch"
+        data-theme-set={th.id}
+        data-ink={th.ink}
+        aria-pressed={i === 0 ? 'true' : 'false'}
+        aria-label={th.name[lang]}
+        title={th.name[lang]}
+        style={`--sw: ${th.ink}`}
+      />
+    ))
+  }
+</div>

@@ -3,6 +3,10 @@ name: Deploy
 on:
   push:
     branches: [main]
+  # The About page's contribution calendar is fetched at build time, so it is
+  # only as fresh as the last deploy. Rebuild daily to keep it current.
+  schedule:
+    - cron: '17 3 * * *'
   workflow_dispatch:
 
 permissions:

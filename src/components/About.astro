@@ -1,5 +1,6 @@
 ---
 import Plate from './Plate.astro';
+import Heatmap from './Heatmap.astro';
 import { SITE, EPIGRAPH, COPY, type Lang } from '../data/site';
 
 interface Props {
@@ -68,6 +69,8 @@ const body = {
       />
     </div>
 
+
+    <Heatmap lang={lang} />
 
     <div style="margin-block-start: var(--s-4xl)">
       <h2 class="chrome chrome--label" style="opacity:.7; margin-block-end: var(--s-l)">

@@ -8,7 +8,8 @@ import '../styles/components.css';
 import Nav from '../components/Nav.astro';
 import StickyNav from '../components/StickyNav.astro';
 import Footer from '../components/Footer.astro';
-import { COPY, SITE, type Lang } from '../data/site';
+import Menu from '../components/Menu.astro';
+import { COPY, SITE, THEMES, type Lang } from '../data/site';
 
 interface Props {
   lang: Lang;
@@ -21,6 +22,7 @@ interface Props {
 const { lang, title, description, navSurface = 'ink' } = Astro.props;
 const t = COPY[lang];
 const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
+const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
 ---
 
 <!doctype html>
@@ -31,7 +33,16 @@ const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
     <title>{fullTitle}</title>
     {description && <meta name="description" content={description} />}
     <meta name="color-scheme" content="only light" />
-    <meta name="theme-color" content="#7900f2" />
+    <meta name="theme-color" content={THEMES[0].ink} />
+    <script is:inline define:vars={{ inks }}>
+      try {
+        var saved = localStorage.getItem('theme');
+        if (saved && inks[saved]) {
+          document.documentElement.setAttribute('data-theme', saved);
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', inks[saved]);
+        }
+      } catch (e) {}
+    </script>
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site ?? 'https://saeeedhany.github.io')} />
     <link rel="alternate" hreflang={lang === 'ar' ? 'en' : 'ar'} href={t.otherLangHref} />
     <meta property="og:title" content={fullTitle} />
@@ -59,6 +70,9 @@ const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
         <slot />
       </main>
     </div>
+
+    <!-- mobile menu; inert and clipped away until opened -->
+    <Menu lang={lang} />
 
     <!-- tiled grain, replacing the reference's WebGL canvas -->
     <div class="grain" aria-hidden="true"></div>
@@ -123,6 +137,8 @@ const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
           if (show !== navShown) {
             navShown = show;
             navbar.dataset.shown = String(show);
+            // unreachable while parked above the viewport, reachable once shown
+            navbar.inert = !show;
           }
         }
 
@@ -169,6 +185,97 @@ const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
 
       addEventListener('resize', update, { passive: true });
       update();
+
+      // ---- theme ------------------------------------------------------------
+      // The saved theme was already applied before first paint by the inline
+      // script in <head>; this handles changes and keeps every switch in sync.
+      const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+
+      const syncSwitches = () => {
+        const current = root.dataset.theme ?? 'lapis';
+        for (const b of document.querySelectorAll<HTMLElement>('[data-theme-set]')) {
+          b.setAttribute('aria-pressed', String(b.dataset.themeSet === current));
+        }
+      };
+
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-theme-set]');
+        if (!btn) return;
+        const id = btn.dataset.themeSet!;
+        root.dataset.theme = id;
+        if (themeMeta && btn.dataset.ink) themeMeta.content = btn.dataset.ink;
+        try {
+          localStorage.setItem('theme', id);
+        } catch {
+          /* private mode or blocked storage: the change still applies */
+        }
+        syncSwitches();
+      });
+
+      syncSwitches();
+      // Only now allow --ink to transition. Two frames so the first paint has
+      // committed with the saved theme; otherwise it would animate in on load.
+      requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('theme-ready')));
+
+      // ---- menu ---------------------------------------------------------------
+      // Opening makes every OTHER top-level element inert, which contains focus
+      // inside the dialog without a hand-written focus trap, and stops Lenis so
+      // the page underneath can't scroll. Closing restores focus to whichever
+      // button opened it.
+      const menu = document.querySelector<HTMLElement>('[data-menu]');
+      if (menu) {
+        const openers = Array.from(document.querySelectorAll<HTMLElement>('[data-menu-open]'));
+        const closeBtn = menu.querySelector<HTMLElement>('[data-menu-close]');
+        const rest = () =>
+          Array.from(document.body.children).filter(
+            (el): el is HTMLElement => el !== menu && el instanceof HTMLElement && el.tagName !== 'SCRIPT',
+          );
+        let returnTo: HTMLElement | null = null;
+        // elements that were already inert before opening (the parked sticky
+        // bar) must stay inert after closing
+        let wasInert = new Set<HTMLElement>();
+
+        const setExpanded = (v: boolean) =>
+          openers.forEach((b) => b.setAttribute('aria-expanded', String(v)));
+
+        const open = (from: HTMLElement) => {
+          returnTo = from;
+          wasInert = new Set(rest().filter((el) => el.inert));
+          menu.inert = false;
+          menu.dataset.open = 'true';
+          setExpanded(true);
+          rest().forEach((el) => (el.inert = true));
+          root.classList.add('menu-open');
+          lenis?.stop();
+          // focus once the curtain has started, so the ring doesn't flash first
+          setTimeout(() => closeBtn?.focus({ preventScroll: true }), reduce.matches ? 0 : 120);
+        };
+
+        const close = (restoreFocus = true) => {
+          if (menu.dataset.open !== 'true') return;
+          menu.dataset.open = 'false';
+          menu.inert = true;
+          setExpanded(false);
+          rest().forEach((el) => (el.inert = wasInert.has(el)));
+          root.classList.remove('menu-open');
+          lenis?.start();
+          if (restoreFocus) returnTo?.focus({ preventScroll: true });
+        };
+
+        openers.forEach((b) => b.addEventListener('click', () => open(b)));
+        closeBtn?.addEventListener('click', () => close());
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') close();
+        });
+        // following a link: let navigation proceed, don't yank focus back
+        menu.addEventListener('click', (e) => {
+          if ((e.target as HTMLElement).closest('a')) close(false);
+        });
+        // rotating or resizing into desktop width must never strand it open
+        matchMedia('(min-width: 961px)').addEventListener('change', (m) => {
+          if (m.matches) close(false);
+        });
+      }
     </script>
   </body>
 </html>

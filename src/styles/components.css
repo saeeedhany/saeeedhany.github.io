@@ -144,30 +144,54 @@
   font-size: calc(var(--t-title) * 0.82);
 }
 
-/* Mobile: the three links and the language toggle fit in one row at 390px, so
-   they stay visible. A hamburger would hide four items behind a tap and need
-   JS, a focus trap and an aria-expanded state to reveal less than one row. */
+/* centre column: wordmark with the social marks beneath it, as in the
+   reference's HERMES / AGENT lockup */
+.nav__center {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-s);
+}
+
+.nav__social {
+  opacity: 0.85;
+}
+
+/* end column: secondary links + language, then the theme swatches */
+.nav__links--end {
+  gap: var(--s-xl);
+}
+.nav__group {
+  display: flex;
+  align-items: center;
+  gap: var(--s-xl);
+}
+
+.nav__burger {
+  display: none;
+}
+
+/* Mobile: everything collapses into the menu. Wordmark at the start, burger
+   at the end, one row. */
 @media (max-width: 960px) {
-  /* flex, not grid: the mark takes a full row and both link groups then flow
-     onto a single second row instead of stacking as two grid rows */
   .nav__inner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--s-m) var(--s-l);
+    grid-template-columns: 1fr auto;
+  }
+  /* Two-class selectors on purpose: .socials and .theme-switch are defined
+     further down this file with equal single-class specificity, so a plain
+     `.nav__social { display: none }` here loses to them on source order. */
+  .nav__links,
+  .nav__links--end,
+  .nav .nav__social {
+    display: none;
+  }
+  .nav__center {
+    justify-items: start;
   }
   .nav__mark {
-    /* DOM order is links / mark / links-end, so the mark needs pulling to the
-       front or it lands between the two link groups */
-    order: -1;
-    flex: 0 0 100%;
     text-align: start;
   }
-  .nav__links,
-  .nav__links--end {
-    justify-content: flex-start;
-    gap: var(--s-l);
-    flex-wrap: wrap;
+  .nav__burger {
+    display: inline-flex;
   }
 }
 
@@ -367,11 +391,15 @@
   inset: 0;
   z-index: 0;
 }
+/* opacity lives on the duo container, never the img: a translucent img would
+   multiply to grey instead of black and break the exact two-colour mapping */
+.quote__plate {
+  opacity: 0.4;
+}
 .quote__plate img {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  opacity: 0.4;
 }
 
 /* radial vignette, straight from the reference */
@@ -852,13 +880,13 @@
   pointer-events: auto;
   background: var(--paper);
   color: var(--ink);
-  /* The bar is paper sitting on paper, so a 0.5px hairline alone disappears.
-     A crisp 1px rule plus a hue-tinted drop shadow — never black — is what
-     separates it from the content underneath. */
+  /* The bar is paper on paper, so it needs SOME separation — but light and
+     soft: a faint hairline and one wide, low-opacity, hue-tinted shadow
+     (never black). A large negative spread keeps it from reading as a hard
+     edge. */
   box-shadow:
-    inset 0 -1px 0 0 color-mix(in srgb, var(--ink) 40%, transparent),
-    0 6px 16px -6px color-mix(in srgb, var(--shadow-ink) 55%, transparent),
-    0 2px 4px -2px color-mix(in srgb, var(--shadow-ink) 35%, transparent);
+    inset 0 -1px 0 0 color-mix(in srgb, var(--ink) 12%, transparent),
+    0 12px 32px -20px color-mix(in srgb, var(--shadow-ink) 30%, transparent);
 }
 
 .navbar__row {
@@ -870,11 +898,31 @@
   min-block-size: 64px;
 }
 
+.navbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-xl);
+}
+
 .navbar__links {
   display: flex;
   align-items: center;
   gap: var(--s-xl);
   flex-wrap: wrap;
+}
+
+.navbar__burger {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .navbar__links,
+  .navbar .navbar__theme {
+    display: none;
+  }
+  .navbar__burger {
+    display: inline-flex;
+  }
 }
 
 .navbar__mark {
@@ -896,9 +944,6 @@
   .navbar__row {
     min-block-size: 52px;
   }
-  .navbar__links {
-    gap: var(--s-l);
-  }
   .navbar__mark {
     font-size: var(--t-body);
   }
@@ -918,12 +963,16 @@
   overflow: hidden;
 }
 
-.footer__bg img {
+.footer__plate {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55; /* on the container, not the img — see .quote__plate */
+}
+.footer__plate img {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
   object-position: center 28%;
-  opacity: 0.55;
 }
 
 /* fade the plate out toward the bottom so the link row stays legible */
@@ -931,6 +980,7 @@
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 3;
   background: linear-gradient(
     to bottom,
     color-mix(in srgb, var(--ink) 25%, transparent) 0%,
@@ -945,4 +995,545 @@
 }
 .footer__inner {
   z-index: 2;
+}
+
+/* ============================================================================
+   SOCIAL ICONS
+   ========================================================================= */
+
+.socials {
+  display: flex;
+  align-items: center;
+  gap: var(--s-m);
+}
+
+.socials__link {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.socials__link:hover {
+  opacity: 0.7;
+  transform: translateY(-1px);
+}
+
+.socials--lg {
+  gap: var(--s-l);
+}
+.socials--lg .socials__link {
+  inline-size: 40px;
+  block-size: 40px;
+  box-shadow: inset 0 0 0 var(--hair) var(--line-strong);
+}
+.socials--lg .socials__link:hover {
+  opacity: 1;
+  background: var(--fg);
+  color: var(--bg);
+  transform: none;
+}
+
+/* ============================================================================
+   THEME SWITCH
+   Each swatch shows its own theme's ink (--sw, fixed), so the row always
+   previews all three. A paper ring keeps the active-theme swatch visible when
+   it sits on a band of its own colour.
+   ========================================================================= */
+
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  direction: ltr;
+}
+
+.swatch {
+  inline-size: 12px;
+  block-size: 12px;
+  background: var(--sw);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 55%, transparent);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.swatch:hover {
+  transform: scale(1.2);
+}
+.swatch[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 1px var(--bg),
+    0 0 0 2.5px var(--fg);
+}
+
+.theme-switch--lg {
+  gap: var(--s-m);
+}
+.theme-switch--lg .swatch {
+  inline-size: 28px;
+  block-size: 28px;
+}
+
+/* ============================================================================
+   BURGER
+   ========================================================================= */
+
+.burger,
+.menu__close {
+  align-items: center;
+  gap: var(--s-s);
+  min-block-size: 40px;
+  padding-inline: var(--s-xs);
+  color: inherit;
+}
+
+.burger__lines,
+.menu__x {
+  position: relative;
+  display: inline-block;
+  inline-size: 22px;
+  block-size: 14px;
+}
+
+.burger__lines > span,
+.menu__x > span {
+  position: absolute;
+  inset-inline: 0;
+  block-size: 1.5px;
+  background: currentColor;
+  transition:
+    transform 0.45s cubic-bezier(0.76, 0, 0.24, 1),
+    opacity 0.3s var(--ease),
+    inline-size 0.3s var(--ease);
+}
+
+.burger__lines > span:nth-child(1) { inset-block-start: 0; }
+.burger__lines > span:nth-child(2) { inset-block-start: calc(50% - 0.75px); }
+.burger__lines > span:nth-child(3) { inset-block-end: 0; }
+
+/* a small idle cue: the middle line shortens on hover */
+.burger:hover .burger__lines > span:nth-child(2) {
+  inline-size: 60%;
+}
+
+/* ============================================================================
+   MENU
+   ========================================================================= */
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 95; /* above the sticky bar (90), under the frame (100) and grain (101) */
+  overflow: hidden;
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition:
+    clip-path 0.55s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s linear 0.55s;
+}
+
+.menu[data-open='true'] {
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s;
+}
+
+/* faint dithered plate behind the menu, tying it to the rest of the site */
+.menu__plate {
+  position: absolute;
+  inset: 0;
+  opacity: 0.14;
+  transform: scale(1.06);
+  transition: transform 1.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.menu[data-open='true'] .menu__plate {
+  transform: scale(1);
+}
+.menu__plate img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.menu__body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  padding-block: var(--s-l) var(--s-2xl);
+  overflow-y: auto;
+}
+
+.menu__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  padding-block: var(--s-xs);
+}
+
+.menu__mark {
+  font-family: var(--f-display);
+  font-size: var(--t-title);
+  font-weight: 500;
+  line-height: var(--mark-lh, 0.92);
+  text-transform: uppercase;
+}
+[dir='rtl'] .menu__mark {
+  --mark-lh: 1.15;
+  font-size: calc(var(--t-title) * 0.82);
+}
+
+.menu__close {
+  display: inline-flex;
+}
+
+/* the close mark starts as two parallel lines and folds into an X once the
+   curtain is down — continuous with the burger it replaced */
+.menu__x > span:nth-child(1) { inset-block-start: 3px; }
+.menu__x > span:nth-child(2) { inset-block-end: 3px; }
+
+.menu[data-open='true'] .menu__x > span {
+  transition-delay: 0.35s;
+}
+.menu[data-open='true'] .menu__x > span:nth-child(1) {
+  transform: translateY(3.75px) rotate(45deg);
+}
+.menu[data-open='true'] .menu__x > span:nth-child(2) {
+  transform: translateY(-3.75px) rotate(-45deg);
+}
+
+.menu__nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-block: var(--s-3xl);
+}
+
+.menu__list {
+  inline-size: 100%;
+}
+
+.menu__item {
+  box-shadow: inset 0 calc(-1 * var(--hair)) 0 0 var(--line);
+}
+
+.menu__link {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-l);
+  padding-block: var(--s-m);
+}
+
+.menu__index {
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+
+/* each label rises out of its own mask */
+.menu__mask {
+  display: block;
+  overflow: hidden;
+  /* room for Arabic ascenders/descenders so the mask doesn't clip them */
+  padding-block: 0.08em;
+}
+
+.menu__label {
+  display: block;
+  font-size: clamp(2.75rem, 12vw, 5rem);
+  line-height: 1;
+  transform: translateY(110%);
+  transition: transform 0.3s cubic-bezier(0.76, 0, 0.24, 1);
+}
+[dir='rtl'] .menu__label {
+  line-height: 1.35;
+}
+
+.menu__link:hover .menu__label,
+.menu__link[aria-current] .menu__label {
+  color: var(--accent);
+}
+
+.menu[data-open='true'] .menu__label {
+  transform: translateY(0);
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(0.28s + var(--i) * 0.07s);
+}
+.menu[data-open='true'] .menu__index {
+  opacity: 0.6;
+  transition-delay: calc(0.4s + var(--i) * 0.07s);
+}
+
+.menu__foot {
+  display: grid;
+  gap: var(--s-l);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.menu[data-open='true'] .menu__foot {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s var(--ease) calc(0.3s + var(--i) * 0.07s),
+    transform 0.6s var(--ease) calc(0.3s + var(--i) * 0.07s);
+}
+
+.menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  flex-wrap: wrap;
+}
+
+.menu__key {
+  opacity: 0.6;
+}
+
+.menu__email {
+  opacity: 0.7;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/* the menu is a mobile construct; never leave it open at desktop widths */
+@media (min-width: 961px) {
+  .menu {
+    display: none;
+  }
+}
+
+/* while open, the page underneath must not scroll (Lenis is stopped too) */
+html.menu-open {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .menu[data-open='true'],
+  .menu__plate,
+  .menu__label,
+  .menu[data-open='true'] .menu__label,
+  .menu__index,
+  .menu__foot,
+  .menu[data-open='true'] .menu__foot,
+  .burger__lines > span,
+  .menu__x > span {
+    transition: none !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* ============================================================================
+   CONTRIBUTION HEATMAP
+   GitHub's calendar, re-drawn in the site's own grammar: square cells, zero
+   radius, five steps of the current ink mixed into paper — so it recolours
+   with the theme like everything else. Metadata (months, weekdays, dates) is
+   Latin mono on both language pages, and the calendar always runs
+   left-to-right: it is a time axis, not text.
+   ========================================================================= */
+
+.hm {
+  --cell: 11px;
+  --gap: 3px;
+  display: grid;
+  gap: var(--s-l);
+  margin-block-start: var(--s-4xl);
+}
+
+.hm__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-l);
+  flex-wrap: wrap;
+}
+
+.hm__title {
+  opacity: 0.7;
+}
+
+.hm__profile {
+  opacity: 0.7;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+}
+.hm__profile:hover {
+  opacity: 1;
+}
+
+.hm__lead {
+  opacity: 0.85;
+  max-inline-size: 52ch;
+}
+
+.hm__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-l) var(--s-3xl);
+  padding-block: var(--s-l);
+  box-shadow:
+    inset 0 var(--hair) 0 0 var(--line),
+    inset 0 calc(-1 * var(--hair)) 0 0 var(--line);
+}
+.hm__stats dt {
+  opacity: 0.6;
+  margin-block-end: var(--s-xs);
+}
+.hm__num {
+  font-family: var(--f-display-la);
+  font-size: var(--t-title);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hm__unit {
+  margin-inline-start: 0.4em;
+  opacity: 0.6;
+  font-size: var(--t-info);
+}
+
+.hm__scroll {
+  /* the frame sizes its cells from this box's width */
+  container-type: inline-size;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  direction: ltr;
+  padding-block: 28px 4px; /* headroom for the tooltip above the top row */
+}
+
+.hm__frame {
+  /* Fill the column on desktop; never below 10px, so on a phone the calendar
+     keeps legible cells and scrolls sideways instead (opened at the latest
+     weeks). 34px = weekday labels + their gap. */
+  --cell: clamp(10px, calc((100cqw - 34px) / var(--cols) - var(--gap)), 17px);
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px auto;
+  grid-template-rows: auto auto;
+  gap: 6px 4px;
+  inline-size: max-content;
+}
+
+.hm__months {
+  grid-column: 2;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  column-gap: var(--gap);
+  font-size: var(--t-legend);
+  opacity: 0.6;
+}
+.hm__months > span {
+  white-space: nowrap;
+}
+
+.hm__weekdays {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  row-gap: var(--gap);
+  font-size: var(--t-legend);
+  line-height: var(--cell);
+  opacity: 0.6;
+}
+
+.hm__grid {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  grid-auto-columns: var(--cell);
+  gap: var(--gap);
+  outline-offset: 4px;
+}
+
+.hm__cell {
+  --p: 7%;
+  display: block;
+  inline-size: var(--cell);
+  block-size: var(--cell);
+  background: color-mix(in srgb, var(--ink) var(--p), var(--paper));
+  transition:
+    opacity 0.5s var(--ease),
+    transform 0.5s var(--ease);
+}
+.hm__cell[data-l='1'] { --p: 30%; }
+.hm__cell[data-l='2'] { --p: 55%; }
+.hm__cell[data-l='3'] { --p: 78%; }
+.hm__cell[data-l='4'] { --p: 100%; }
+
+.hm__grid .hm__cell:hover,
+.hm__grid .hm__cell[data-active] {
+  box-shadow: 0 0 0 1.5px var(--fg);
+  position: relative;
+  z-index: 1;
+}
+
+/* entrance: columns fill in left to right the first time the calendar is seen */
+.hm:not([data-visible]) .hm__grid .hm__cell {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.hm[data-visible] .hm__grid .hm__cell {
+  transition-delay: calc(var(--c) * 9ms);
+}
+
+.hm__tip {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 5px 8px;
+  background: var(--fg);
+  color: var(--bg);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--sh-overlay);
+}
+.hm__tip[hidden] {
+  display: none;
+}
+
+.hm__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  flex-wrap: wrap;
+}
+
+.hm__hint {
+  opacity: 0.45;
+  font-size: var(--t-legend);
+}
+
+.hm__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap);
+  font-size: var(--t-legend);
+}
+.hm__legend > span:first-child {
+  margin-inline-end: 4px;
+  opacity: 0.6;
+}
+.hm__legend > span:last-child {
+  margin-inline-start: 4px;
+  opacity: 0.6;
+}
+
+/* the keyboard hint only matters where there's a keyboard */
+@media (hover: none) {
+  .hm__hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm__cell {
+    transition: none;
+  }
 }

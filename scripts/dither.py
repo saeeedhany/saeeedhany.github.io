@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Turn any image into the site's indigo two-colour dither.
+"""Turn any image into the site's two-colour dither.
 
 This is the effect on every image on the site. It reduces a picture to exactly
-two colours — the brand indigo and the paper off-white — using an ordered
-dither, so the midtones survive as a visible crosshatch or dot pattern instead
-of being crushed to flat shapes.
+two tones using an ordered dither, so the midtones survive as a visible
+crosshatch or dot pattern instead of being crushed to flat shapes.
+
+OUTPUT IS A BLACK-AND-WHITE MASK, NOT A COLOURED IMAGE. Black marks where the
+theme's ink goes, white where the paper goes; the site colours it live (see
+.duo in src/styles/base.css), so it follows the theme switch — lapis, saffron
+or malachite. Opened on its own it looks black and white. That is correct.
+Pass --bake to burn a colour in instead, for use outside the site.
 
 QUICK START
 
@@ -47,7 +52,10 @@ TUNING
     --aspect W:H   crop to an arbitrary ratio, e.g. 4:5 for a portrait.
     --gravity G    which part to keep when cropping: north, center, south...
                    Use north for a portrait so the crop doesn't cut the head.
-    --hue '#hex'   override the ink colour.
+    --bake         burn colours in (--hue / --paper) instead of writing a mask.
+                   Only for images used OUTSIDE the site: a baked image
+                   ignores the theme switch.
+    --hue '#hex'   ink colour for --bake (default lapis #7900f2).
 
 Requires ImageMagick 7 (`magick`).
 """
@@ -75,7 +83,7 @@ TREATMENTS = ("ordered", "halftone", "scanline")
 
 
 def build_args(src, dest, treatment, width, square, contrast, ink, paper,
-               positive, aspect=None, gravity="center"):
+               positive, aspect=None, gravity="center", bake=False):
     pre = [
         "magick", f"{src}[0]",
         "-auto-orient",
@@ -115,16 +123,18 @@ def build_args(src, dest, treatment, width, square, contrast, ink, paper,
     # -fill/-opaque here: ordered dithering leaves three tones rather than two,
     # and an -opaque swap on a Gray-colorspace image silently collapses the hue
     # to its luminance, which produces a grey image.
+    if not bake:
+        # the site's mask: black = ink, white = paper
+        ink, paper = "black", "white"
     lo, hi = (ink, paper) if positive else (paper, ink)
-    post = [
-        "-colorspace", "sRGB",
-        "+level-colors", f"{lo},{hi}",
+    if bake:
         # PNG8 with a 2-colour palette. A dither is pure high-frequency detail:
         # lossy WebP smears it and is ~10x larger, lossless WebP is ~20x larger.
-        "-colors", "2",
-        "-depth", "8",
-        f"PNG8:{dest}",
-    ]
+        post = ["-colorspace", "sRGB", "+level-colors", f"{lo},{hi}",
+                "-colors", "2", "-depth", "8", f"PNG8:{dest}"]
+    else:
+        post = ["+level-colors", f"{lo},{hi}", "-colorspace", "gray",
+                "-threshold", "50%", "-type", "bilevel", f"PNG:{dest}"]
     return pre + mid + post
 
 
@@ -163,7 +173,9 @@ def main():
                     help="crop anchor: north, center, south, ... (default center)")
     ap.add_argument("--contrast", type=float, default=4.0,
                     help="sigmoidal contrast, default 4. Raise if muddy.")
-    ap.add_argument("--hue", default=INK, help=f"ink colour (default {INK})")
+    ap.add_argument("--bake", action="store_true",
+                    help="burn colours in instead of writing a theme mask (for use outside the site)")
+    ap.add_argument("--hue", default=INK, help=f"ink colour for --bake (default {INK})")
     ap.add_argument("--paper", default=PAPER, help=f"paper colour (default {PAPER})")
     ap.add_argument("--positive", action="store_true",
                     help="do not invert: dark stays dark")
@@ -190,7 +202,7 @@ def main():
     common = dict(
         width=a.width, square=a.square, contrast=a.contrast,
         ink=a.hue, paper=a.paper, positive=a.positive,
-        aspect=a.aspect, gravity=a.gravity,
+        aspect=a.aspect, gravity=a.gravity, bake=a.bake,
     )
 
     if a.compare:

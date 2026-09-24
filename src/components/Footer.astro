@@ -15,7 +15,9 @@ const year = new Date().getFullYear();
 <footer class={`footer s-ink${reveal ? ' footer--reveal' : ''}`}>
   <!-- full-bleed dithered plate behind everything, as in the reference -->
   <div class="footer__bg" aria-hidden="true">
-    <img src="/plates/observatory.png" alt="" loading="lazy" decoding="async" />
+    <div class="footer__plate duo">
+      <img src="/plates/observatory.png" alt="" loading="lazy" decoding="async" />
+    </div>
   </div>
 
   <!-- the giant ghost wordmark, over the plate -->

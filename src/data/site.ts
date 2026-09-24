@@ -5,12 +5,28 @@ export const SITE = {
   /** two-line wordmark, as in the reference's centred HERMES / AGENT */
   mark: { ar: ['سعيد', 'هاني'], en: ['SAEED', 'HANY'] },
   email: 'alsaeedalbasi0ny@gmail.com',
+  // Real accounts, taken from the previous site's layout.
   social: [
-    { label: 'GitHub', href: 'https://github.com/', glyph: 'gh' },
-    { label: 'X', href: 'https://x.com/', glyph: 'x' },
-    { label: 'Reddit', href: 'https://reddit.com/', glyph: 'r/' },
+    { id: 'github', label: 'GitHub', href: 'https://github.com/saeeedhany', glyph: 'gh' },
+    { id: 'x', label: 'X', href: 'https://x.com/S8eed_', glyph: 'x' },
+    { id: 'reddit', label: 'Reddit', href: 'https://www.reddit.com/user/s_saeed_1/', glyph: 'r/' },
   ],
+  /** GitHub account whose public contribution calendar is shown on About */
+  github: 'saeeedhany',
 } as const;
+
+/**
+ * Themes. Each is a manuscript pigment. `ink` must match the value in
+ * src/styles/tokens.css — it is repeated here only for the swatch and for
+ * <meta name="theme-color">, which can't read a CSS variable.
+ */
+export const THEMES = [
+  { id: 'lapis', ink: '#7900f2', name: { en: 'Lapis', ar: 'لازورد' } },
+  { id: 'saffron', ink: '#8f4700', name: { en: 'Saffron', ar: 'زعفران' } },
+  { id: 'malachite', ink: '#006935', name: { en: 'Malachite', ar: 'دهنج' } },
+] as const;
+
+export type ThemeId = (typeof THEMES)[number]['id'];
 
 export const NAV = [
   { href: { ar: '/ar/writing', en: '/writing' }, label: { ar: 'الكتابة', en: 'Writing' } },
@@ -79,6 +95,15 @@ export const COPY = {
     },
     status: { read: 'مقروء', reading: 'أقرأه الآن', want: 'أريده' },
     plateCredit: 'اللوحة',
+    menu: 'القائمة',
+    close: 'إغلاق',
+    theme: 'اللون',
+    elsewhere: 'في أماكن أخرى',
+    activity: 'النشاط',
+    activityLead: 'المساهمات العامة على GitHub خلال العام الماضي.',
+    contributions: 'مساهمة',
+    less: 'أقل',
+    more: 'أكثر',
   },
   en: {
     dir: 'ltr',
@@ -109,6 +134,15 @@ export const COPY = {
     },
     status: { read: 'Read', reading: 'Reading', want: 'Want' },
     plateCredit: 'Plate',
+    menu: 'Menu',
+    close: 'Close',
+    theme: 'Theme',
+    elsewhere: 'Elsewhere',
+    activity: 'Activity',
+    activityLead: 'Public contributions on GitHub over the last year.',
+    contributions: 'contributions',
+    less: 'Less',
+    more: 'More',
   },
 } as const;
 

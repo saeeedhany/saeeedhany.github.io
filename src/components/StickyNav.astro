@@ -1,4 +1,6 @@
 ---
+import ThemeSwitch from './ThemeSwitch.astro';
+import Burger from './Burger.astro';
 import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
 
 interface Props {
@@ -12,33 +14,41 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
 ---
 
 <!--
-  Hidden from assistive tech: it duplicates the page's own <header>, which is
-  always in the DOM and reachable. Showing both would put every nav link in the
-  tab order twice.
+  Starts `inert`: while parked above the viewport nothing in it can be focused
+  or read. The script in Base.astro removes `inert` when the bar drops in.
+
+  It used to be aria-hidden with tabindex=-1 links, which was fine while it only
+  duplicated the header. It now carries the mobile menu button once the header
+  has scrolled away, so it has to be a real, reachable navigation when shown.
 -->
-<div class="navbar" data-navbar data-shown="false" aria-hidden="true">
+<div class="navbar" data-navbar data-shown="false" inert>
   <div class="navbar__inner s-paper">
     <div class="container">
       <div class="navbar__row">
-        <a class="navbar__mark" href={baseFor(lang) || '/'} tabindex="-1">
+        <a class="navbar__mark" href={baseFor(lang) || '/'}>
           {mark[0]} {mark[1]}
         </a>
 
-        <nav class="navbar__links">
-          {
-            NAV.map((item) => (
-              <a
-                class="nav__link ui"
-                href={item.href[lang]}
-                tabindex="-1"
-                aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
-              >
-                {item.label[lang]}
-              </a>
-            ))
-          }
-          <a class="nav__link chrome" href={t.otherLangHref} tabindex="-1">{t.otherLang}</a>
-        </nav>
+        <div class="navbar__end">
+          <nav class="navbar__links" aria-label={lang === 'ar' ? 'تنقل سريع' : 'Quick navigation'}>
+            {
+              NAV.map((item) => (
+                <a
+                  class="nav__link ui"
+                  href={item.href[lang]}
+                  aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
+                >
+                  {item.label[lang]}
+                </a>
+              ))
+            }
+            <a class="nav__link chrome" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
+              {t.otherLang}
+            </a>
+          </nav>
+          <ThemeSwitch lang={lang} class="navbar__theme" />
+          <Burger lang={lang} class="navbar__burger" />
+        </div>
       </div>
     </div>
   </div>

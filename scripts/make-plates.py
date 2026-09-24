@@ -30,8 +30,11 @@ OUT = ROOT / "public" / "plates"
 CACHE = ROOT / ".cache" / "plate-sources"
 CREDITS = ROOT / "src" / "data" / "plates.json"
 
-INK = "#7900f2"
-PAPER = "#f2f2f2"
+# Plates are stored as 1-bit MASKS: black where the ink goes, white where the
+# paper goes. The site colours them live per theme (see .duo in base.css), so
+# baking a colour in here would make them ignore the theme switch.
+INK = "black"
+PAPER = "white"
 
 UA = "saeed-site-plate-builder/1.0 (personal website build script)"
 
@@ -149,15 +152,14 @@ def dither(src, dest, treatment):
     else:
         mid = ["-ordered-dither", "o8x8"]
 
-    # PNG8 with a 2-colour palette, not WebP. A dithered bitmap is pure
-    # high-frequency detail: lossy WebP smears it and still lands ~580 KB,
-    # lossless WebP balloons to 1.3 MB, PNG8 stores the same pixels in ~72 KB.
+    # 1-bit PNG, not WebP. A dithered bitmap is pure high-frequency detail:
+    # lossy WebP smears it at ~10x the size; a bilevel PNG stores it exactly.
     post = [
-        "-colorspace", "sRGB",
         "+level-colors", f"{PAPER},{INK}",
-        "-colors", "2",
-        "-depth", "8",
-        f"PNG8:{dest}",
+        "-colorspace", "gray",
+        "-threshold", "50%",
+        "-type", "bilevel",
+        f"PNG:{dest}",
     ]
 
     subprocess.run(pre + mid + post, check=True, capture_output=True)

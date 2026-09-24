@@ -179,17 +179,67 @@ ol {
 }
 
 /* ============================================================================
+   DUOTONE — how every image on the site gets its colour
+
+   Images are stored as 1-bit masks: black where the ink goes, white where the
+   paper goes. They are coloured live, so a theme change recolours them along
+   with everything else (and, because --ink is a registered <color>, animates).
+
+     1. the container paints --paper
+     2. the image MULTIPLIES onto it   -> black stays black, white becomes paper
+     3. a layer of --ink LIGHTENS it   -> black becomes ink, paper stays paper
+
+   Step 3 is exact rather than approximate because lighten takes the per-
+   channel maximum, and every theme's ink is <= paper (#f2) in every channel:
+   lapis 79/00/f2, saffron 8f/47/00, malachite 00/69/35. A new theme must keep
+   that property or its paper areas will tint.
+
+   The container must be positioned (this class doesn't set position, so it
+   can sit on absolutely-positioned layers too).
+   ========================================================================= */
+
+.duo {
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.duo > img {
+  mix-blend-mode: multiply;
+}
+
+.duo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--ink);
+  mix-blend-mode: lighten;
+}
+
+/* images inside markdown prose, wrapped by the rehype plugin in astro.config */
+.duo--inline {
+  display: block;
+  position: relative;
+}
+.duo--inline > img {
+  display: block;
+  inline-size: 100%;
+  block-size: auto;
+}
+
+/* ============================================================================
    PLATE — a dithered manuscript image with its noise layer and credit
    ========================================================================= */
 
 .plate {
   position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background: var(--ink);
 }
 
+/* noise sits above the ink layer (z 1) */
 .plate::after {
+  z-index: 2;
   content: '';
   position: absolute;
   inset: 0;

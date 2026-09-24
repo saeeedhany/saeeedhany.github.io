@@ -1,0 +1,89 @@
+---
+import SocialIcons from './SocialIcons.astro';
+import ThemeSwitch from './ThemeSwitch.astro';
+import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const mark = SITE.mark[lang];
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
+---
+
+<!--
+  The mobile menu. One per page, opened by any [data-menu-open] button.
+
+  Closed, it is `inert` and clipped to nothing, so it is neither visible,
+  focusable nor read. Open, the script in Base.astro makes everything ELSE on
+  the page inert — which traps focus in here without a hand-written focus trap
+  — stops Lenis, and restores focus to the button that opened it on close.
+
+  Motion: the panel drops like the sticky bar (a clip-path curtain), then each
+  link rises out of its own mask, staggered by --i. All of it collapses to an
+  instant switch under prefers-reduced-motion.
+-->
+<div
+  class="menu s-ink"
+  id="site-menu"
+  data-menu
+  data-open="false"
+  role="dialog"
+  aria-modal="true"
+  aria-label={t.menu}
+  inert
+>
+  <div class="menu__plate duo" aria-hidden="true">
+    <img src="/plates/optics-diagram.png" alt="" loading="lazy" decoding="async" />
+  </div>
+
+  <div class="menu__body container">
+    <div class="menu__bar">
+      <a class="menu__mark" href={baseFor(lang) || '/'}>{mark[0]}<br />{mark[1]}</a>
+      <button type="button" class="menu__close" data-menu-close>
+        <span class="burger__label ui">{t.close}</span>
+        <span class="menu__x" aria-hidden="true"><span></span><span></span></span>
+      </button>
+    </div>
+
+    <nav class="menu__nav" aria-label={t.menu}>
+      <ol class="menu__list">
+        {
+          NAV.map((item, i) => (
+            <li class="menu__item" style={`--i: ${i}`}>
+              <a
+                class="menu__link"
+                href={item.href[lang]}
+                aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
+              >
+                <span class="menu__index chrome">{String(i + 1).padStart(2, '0')}</span>
+                <span class="menu__mask">
+                  <span class="menu__label display">{item.label[lang]}</span>
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+
+    <div class="menu__foot" style={`--i: ${NAV.length}`}>
+      <div class="menu__row">
+        <span class="chrome chrome--intl menu__key">{t.theme}</span>
+        <ThemeSwitch lang={lang} class="theme-switch--lg" />
+      </div>
+      <div class="menu__row">
+        <span class="chrome chrome--intl menu__key">{t.elsewhere}</span>
+        <SocialIcons size={18} class="socials--lg" />
+      </div>
+      <div class="menu__row">
+        <a class="chrome menu__lang" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
+          {t.otherLang}
+        </a>
+        <a class="chrome menu__email" href={`mailto:${SITE.email}`}>{SITE.email}</a>
+      </div>
+    </div>
+  </div>
+</div>

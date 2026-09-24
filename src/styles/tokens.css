@@ -3,9 +3,47 @@
    One hue, one paper. Every tint is derived, never hardcoded.
    ========================================================================= */
 
+/* --ink is registered as a real <color> so a theme change can TRANSITION it.
+   An unregistered custom property is a token string and would just snap.
+   Every derived tint, every surface, and every image (see .duo in base.css)
+   reads --ink, so animating this one property recolours the entire page. */
+@property --ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #7900f2;
+}
+
+/* ---- THEMES --------------------------------------------------------------
+   Three historical manuscript pigments. Lapis is the RGB-cube corner itself;
+   saffron and malachite are the same HUES as their corners (#f27900, #00f279)
+   deepened to lapis's luminance. The raw corners are unusable as ink: against
+   paper, #f27900 is 2.50:1 and #00f279 is 1.34:1, well under the 4.5:1 body
+   text needs. Deepened, all three sit at ~6.1:1, so contrast is identical
+   whichever theme is active. */
+:root,
+:root[data-theme='lapis'] {
+  --ink: #7900f2;
+}
+:root[data-theme='saffron'] {
+  --ink: #8f4700;
+}
+:root[data-theme='malachite'] {
+  --ink: #006935;
+}
+
+/* Enabled only after first paint (html.theme-ready is added by script), so a
+   saved theme applied before render never animates in on page load. */
+:root.theme-ready {
+  transition: --ink 0.7s cubic-bezier(0.2, 0, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-ready {
+    transition: none;
+  }
+}
+
 :root {
   /* ---- the two colors ------------------------------------------------- */
-  --ink: #7900f2;      /* indigo. lapis lazuli — the pigment of illumination */
   --paper: #f2f2f2;    /* never #fff */
   --accent: #f2f200;   /* selection only */
 

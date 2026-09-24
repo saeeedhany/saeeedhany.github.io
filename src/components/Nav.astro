@@ -1,4 +1,7 @@
 ---
+import SocialIcons from './SocialIcons.astro';
+import ThemeSwitch from './ThemeSwitch.astro';
+import Burger from './Burger.astro';
 import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
 
 interface Props {
@@ -34,27 +37,37 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
         }
       </nav>
 
-      <a class="nav__mark" href={baseFor(lang) || '/'}>
-        {mark[0]}<br />{mark[1]}
-      </a>
-
-      <nav class="nav__links nav__links--end" aria-label={lang === 'ar' ? 'ثانوي' : 'Secondary'}>
-        {
-          right.map((item) => (
-            <a
-              class="nav__link ui"
-              href={item.href[lang]}
-              aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
-            >
-              {item.label[lang]}
-            </a>
-          ))
-        }
-        <!-- the language switch is a token, not prose: it keeps the mono voice -->
-        <a class="nav__link chrome" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
-          {t.otherLang}
+      <!-- wordmark dead centre, social marks beneath it — as in the reference -->
+      <div class="nav__center">
+        <a class="nav__mark" href={baseFor(lang) || '/'}>
+          {mark[0]}<br />{mark[1]}
         </a>
-      </nav>
+        <SocialIcons class="nav__social" size={14} />
+      </div>
+
+      <div class="nav__links nav__links--end">
+        <nav class="nav__group" aria-label={lang === 'ar' ? 'ثانوي' : 'Secondary'}>
+          {
+            right.map((item) => (
+              <a
+                class="nav__link ui"
+                href={item.href[lang]}
+                aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
+              >
+                {item.label[lang]}
+              </a>
+            ))
+          }
+          <!-- the language switch is a token, not prose: it keeps the mono voice -->
+          <a class="nav__link chrome" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
+            {t.otherLang}
+          </a>
+        </nav>
+        <ThemeSwitch lang={lang} />
+      </div>
+
+      <!-- mobile only: everything above collapses into the menu -->
+      <Burger lang={lang} class="nav__burger" />
     </div>
   </div>
 </header>

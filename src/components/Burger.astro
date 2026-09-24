@@ -1,0 +1,26 @@
+---
+import { COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  class?: string;
+}
+const { lang, class: extra = '' } = Astro.props;
+const t = COPY[lang];
+---
+
+<!--
+  Opens the one shared menu (Menu.astro). Any number of these can exist on a
+  page — the header and the sticky navbar each have one — and the script in
+  Base.astro keeps their aria-expanded in sync.
+-->
+<button
+  type="button"
+  class={`burger ${extra}`.trim()}
+  data-menu-open
+  aria-controls="site-menu"
+  aria-expanded="false"
+>
+  <span class="burger__label ui">{t.menu}</span>
+  <span class="burger__lines" aria-hidden="true"><span></span><span></span><span></span></span>
+</button>
