@@ -25,3 +25,8 @@ Thumbs.db
 *~
 .idea/
 .vscode/
+
+# ---- local test harness (not part of the site) ----
+tests/
+# fixture content is copied into src/content only for test builds; refuse it
+src/content/**/zz-fixture-*
