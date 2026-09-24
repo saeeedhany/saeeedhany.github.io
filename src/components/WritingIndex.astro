@@ -1,6 +1,7 @@
 ---
-import { getCollection } from 'astro:content';
-import { COPY, fmtDate, slugOf, type Lang } from '../data/site';
+import SearchButton from './SearchButton.astro';
+import { getPosts, postHref } from '../data/posts';
+import { COPY, fmtDate, type Lang } from '../data/site';
 
 interface Props {
   lang: Lang;
@@ -9,14 +10,21 @@ const { lang } = Astro.props;
 const t = COPY[lang];
 
 /**
- * Every post, in both languages. The Arabic and English pieces are different
- * writing, not translations, so the index lists all of them regardless of
- * which language the site chrome is in. The AR/EN badge and per-row `lang`
- * attribute carry the difference.
+ * Every post, in both languages — they're different pieces, not
+ * translations. Language and tag filters narrow the list client-side; the
+ * filter state lives in the URL (?lang=ar&tag=…) so a filtered view can be
+ * linked to, and tag pills on a post page link straight into it.
  */
-const writing = (await getCollection('writing', (e) => !e.data.draft)).sort(
-  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
-);
+const writing = await getPosts();
+
+// tags ordered by use, then alphabetically; the first TAG_LIMIT are shown
+const tagCount = new Map<string, number>();
+for (const p of writing) for (const tag of p.data.tags) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag]) => tag);
+const TAG_LIMIT = 8;
+
+const isArabic = (s: string) => /[؀-ۿ]/.test(s);
+const langs = ['en', 'ar'] as const;
 ---
 
 <section class="band s-paper">
@@ -30,36 +38,113 @@ const writing = (await getCollection('writing', (e) => !e.data.draft)).sort(
       </span>
     </div>
 
+    <div class="filters" data-filters="writing" hidden>
+      <SearchButton lang={lang} variant="bar" />
+
+      <div class="filters__group" role="group" aria-labelledby="f-lang">
+        <span id="f-lang" class="filters__key chrome chrome--intl">{t.filterLang}</span>
+        <div class="chips">
+          <button type="button" class="chip" data-f="lang" data-v="" aria-pressed="true">
+            {t.all} <span class="chip__n" data-n></span>
+          </button>
+          {
+            langs.map((l) => (
+              <button type="button" class="chip" data-f="lang" data-v={l} aria-pressed="false" lang="en">
+                {l} <span class="chip__n" data-n />
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="filters__group" role="group" aria-labelledby="f-tags">
+        <span id="f-tags" class="filters__key chrome chrome--intl">{t.filterTags}</span>
+        <div class="chips">
+          <button type="button" class="chip" data-f="tag" data-v="" aria-pressed="true">
+            {t.all} <span class="chip__n" data-n></span>
+          </button>
+          {
+            tags.map((tag, i) => (
+              <button
+                type="button"
+                class="chip"
+                data-f="tag"
+                data-v={tag}
+                aria-pressed="false"
+                lang={isArabic(tag) ? 'ar' : 'en'}
+                data-overflow={i >= TAG_LIMIT ? '' : undefined}
+                hidden={i >= TAG_LIMIT}
+              >
+                {tag} <span class="chip__n" data-n />
+              </button>
+            ))
+          }
+          {
+            tags.length > TAG_LIMIT && (
+              <button
+                type="button"
+                class="chip chip--more"
+                data-more
+                aria-expanded="false"
+                data-label-more={t.moreTags(tags.length - TAG_LIMIT)}
+                data-label-less={t.fewerTags}
+              >
+                {t.moreTags(tags.length - TAG_LIMIT)}
+              </button>
+            )
+          }
+        </div>
+      </div>
+
+      <div class="filters__foot">
+        <span class="filters__count chrome chrome--intl" aria-live="polite" data-count data-label={t.showing}></span>
+        <button type="button" class="filters__clear chrome chrome--intl" data-clear hidden>{t.clear}</button>
+      </div>
+    </div>
+
     {
       writing.length === 0 ? (
         <p class="read" style="opacity:.6">
           {lang === 'ar' ? 'لا يوجد شيء منشور بعد.' : 'Nothing published yet.'}
         </p>
       ) : (
-        <div class="rows">
-          {writing.map((entry, i) => (
-            <a class="row" href={`/writing/${slugOf(entry.id)}`} lang={entry.data.lang}>
+        <div class="rows" data-items>
+          {writing.map((post, i) => (
+            <a
+              class="row"
+              data-item
+              href={postHref(post, lang)}
+              lang={post.data.lang}
+              data-lang={post.data.lang}
+              data-tags={JSON.stringify(post.data.tags)}
+            >
               <span class="row__meta chrome">
                 #{String(writing.length - i).padStart(2, '0')}
-                <span class="lang-badge">{entry.data.lang}</span>
+                <span class="lang-badge">{post.data.lang}</span>
               </span>
               <span>
-                <span class="row__title" dir="auto">{entry.data.title}</span>
-                {entry.data.description && (
-                  <span
-                    class="read"
-                    dir="auto"
-                    style="display:block; margin-block-start: var(--s-s); opacity:.8"
-                  >
-                    {entry.data.description}
+                <span class="row__title" dir="auto">{post.data.title}</span>
+                {post.data.description && (
+                  <span class="read" dir="auto" style="display:block; margin-block-start: var(--s-s); opacity:.8">
+                    {post.data.description}
                   </span>
                 )}
               </span>
-              <span class="row__meta chrome">{fmtDate(entry.data.date)}</span>
+              <span class="row__meta chrome">{fmtDate(post.data.date)}</span>
             </a>
           ))}
         </div>
       )
     }
+    <p class="filters__empty read" data-empty hidden>{t.nothingMatches}</p>
   </div>
 </section>
+
+<script>
+  import { initFilters } from '../scripts/filters';
+
+  initFilters('writing', {
+    lang: (el, v) => el.dataset.lang === v,
+    tag: (el, v) => (JSON.parse(el.dataset.tags ?? '[]') as string[]).includes(v),
+  });
+</script>

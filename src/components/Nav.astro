@@ -2,13 +2,16 @@
 import SocialIcons from './SocialIcons.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import Burger from './Burger.astro';
+import SearchButton from './SearchButton.astro';
 import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
 
 interface Props {
   lang: Lang;
+  /** this same page in the other language */
+  altHref: string;
   surface?: 'ink' | 'paper';
 }
-const { lang, surface = 'ink' } = Astro.props;
+const { lang, surface = 'ink', altHref } = Astro.props;
 const t = COPY[lang];
 const mark = SITE.mark[lang];
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -59,15 +62,19 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
             ))
           }
           <!-- the language switch is a token, not prose: it keeps the mono voice -->
-          <a class="nav__link chrome" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
+          <a class="nav__link chrome" href={altHref} lang={lang === 'ar' ? 'en' : 'ar'}>
             {t.otherLang}
           </a>
         </nav>
+        <SearchButton lang={lang} />
         <ThemeSwitch lang={lang} />
       </div>
 
-      <!-- mobile only: everything above collapses into the menu -->
-      <Burger lang={lang} class="nav__burger" />
+      <!-- mobile only: everything above collapses into the menu; search stays out -->
+      <div class="nav__tools">
+        <SearchButton lang={lang} />
+        <Burger lang={lang} class="nav__burger" />
+      </div>
     </div>
   </div>
 </header>

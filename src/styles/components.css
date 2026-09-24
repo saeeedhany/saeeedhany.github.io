@@ -166,8 +166,11 @@
   gap: var(--s-xl);
 }
 
-.nav__burger {
+/* mobile-only cluster: search icon + burger */
+.nav__tools {
   display: none;
+  align-items: center;
+  gap: var(--s-s);
 }
 
 /* Mobile: everything collapses into the menu. Wordmark at the start, burger
@@ -190,7 +193,10 @@
   .nav__mark {
     text-align: start;
   }
-  .nav__burger {
+  .nav__tools {
+    display: flex;
+  }
+  .nav .nav__burger {
     display: inline-flex;
   }
 }
@@ -678,6 +684,11 @@
   display: grid;
   gap: var(--s-l);
   max-inline-size: min(100%, 44rem);
+  /* A narrow block is placed by its PARENT's direction, so an Arabic post on
+     the English site sat at the left with its text right-aligned inside it.
+     margin-inline-end resolves in the element's OWN direction: this pins the
+     block to the start of its own language in all four ltr/rtl pairings. */
+  margin-inline-end: auto;
 }
 
 .essay__head > .read {
@@ -832,6 +843,13 @@
   overflow: hidden;
   opacity: calc(0.35 + 0.65 * var(--footer-progress, 0));
   filter: blur(calc(10px * (1 - var(--footer-progress, 0))));
+  /* A blur paints ~2x its radius OUTSIDE the element. The page covers the
+     footer everywhere except the ink gutters beside the shell on wide screens,
+     where that halo showed as a pale strip down both edges of the hero.
+     clip-path is applied after filter, so it trims the halo to the box; the
+     extra 1px per side removes the half-pixel column that survives when the
+     shell centres on a .5px boundary (e.g. a 1565px-wide viewport). */
+  clip-path: inset(0 1px);
   will-change: opacity, filter;
 }
 
@@ -1194,13 +1212,17 @@
 .menu__x > span:nth-child(1) { inset-block-start: 3px; }
 .menu__x > span:nth-child(2) { inset-block-end: 3px; }
 
-.menu[data-open='true'] .menu__x > span {
+/* shared by the menu and the search overlay, which reuses this close control */
+.menu[data-open='true'] .menu__x > span,
+.search[data-open='true'] .menu__x > span {
   transition-delay: 0.35s;
 }
-.menu[data-open='true'] .menu__x > span:nth-child(1) {
+.menu[data-open='true'] .menu__x > span:nth-child(1),
+.search[data-open='true'] .menu__x > span:nth-child(1) {
   transform: translateY(3.75px) rotate(45deg);
 }
-.menu[data-open='true'] .menu__x > span:nth-child(2) {
+.menu[data-open='true'] .menu__x > span:nth-child(2),
+.search[data-open='true'] .menu__x > span:nth-child(2) {
   transform: translateY(-3.75px) rotate(-45deg);
 }
 
@@ -1535,5 +1557,370 @@ html.menu-open {
 @media (prefers-reduced-motion: reduce) {
   .hm__cell {
     transition: none;
+  }
+}
+
+/* ============================================================================
+   SEARCH TRIGGER
+   ========================================================================= */
+
+.searchbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-m);
+  color: inherit;
+}
+.searchbtn > svg {
+  inline-size: 16px;
+  block-size: 16px;
+  flex: none;
+}
+
+.searchbtn--icon {
+  inline-size: 32px;
+  block-size: 32px;
+  justify-content: center;
+  transition: opacity var(--dur) var(--ease);
+}
+.searchbtn--icon:hover {
+  opacity: 0.7;
+}
+
+/* Field-shaped, but a button: there is one search, and it spans writing and
+   books, so an index page doesn't grow a second, narrower one. */
+.searchbtn--bar {
+  inline-size: 100%;
+  min-block-size: 48px;
+  padding-inline: var(--s-l);
+  box-shadow: inset 0 0 0 var(--hair) var(--line-strong);
+  text-align: start;
+  transition: background var(--dur) var(--ease);
+}
+.searchbtn--bar:hover {
+  background: var(--fill-soft);
+}
+.searchbtn__text {
+  flex: 1;
+  opacity: 0.65;
+}
+.searchbtn__key {
+  padding: 3px 7px;
+  box-shadow: inset 0 0 0 var(--hair) var(--line);
+  opacity: 0.6;
+}
+@media (hover: none) {
+  .searchbtn__key {
+    display: none;
+  }
+}
+
+.menu__search {
+  margin-block-start: var(--s-xl);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.menu[data-open='true'] .menu__search {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.5s var(--ease) 0.25s, transform 0.5s var(--ease) 0.25s;
+}
+
+/* ============================================================================
+   SEARCH OVERLAY — same curtain as the menu, at every width
+   ========================================================================= */
+
+.search {
+  position: fixed;
+  inset: 0;
+  z-index: 97; /* above the menu (95), so opening it from the menu layers cleanly */
+  overflow: hidden;
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition:
+    clip-path 0.5s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s linear 0.5s;
+}
+.search[data-open='true'] {
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 0.6s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s;
+}
+
+.search__body {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  padding-block: clamp(1rem, 4vh, 3rem) var(--s-2xl);
+  max-inline-size: calc(var(--col) + 2 * var(--gutter));
+}
+
+.search__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-l);
+  padding-block: var(--s-m);
+  box-shadow: inset 0 -1px 0 0 var(--line-strong);
+}
+
+.search__glass {
+  inline-size: clamp(20px, 3vw, 30px);
+  flex: none;
+  opacity: 0.7;
+}
+
+.search__input {
+  flex: 1;
+  min-inline-size: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  /* condensed Latin display, falling back to Kufi for Arabic queries */
+  font-family: var(--f-display-la), var(--f-display-ar), sans-serif;
+  font-size: clamp(1.75rem, 1.2rem + 3vw, 3.5rem);
+  font-weight: 300;
+  line-height: 1.3;
+  outline: none;
+  caret-color: var(--accent);
+}
+.search__input::placeholder {
+  color: color-mix(in srgb, var(--fg) 40%, transparent);
+}
+.search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search__status {
+  margin-block: var(--s-l);
+  opacity: 0.6;
+}
+
+.search__results {
+  flex: 1;
+  overflow-y: auto;
+  /* the hover inset on .hit bleeds a few px past the column by design */
+  overflow-x: hidden;
+  padding-inline: var(--s-m);
+  margin-inline: calc(-1 * var(--s-m));
+  overscroll-behavior: contain;
+  display: grid;
+  align-content: start;
+  gap: var(--s-2xl);
+  padding-block-end: var(--s-2xl);
+}
+
+.hit-group__head {
+  margin-block-end: var(--s-s);
+  opacity: 0.55;
+}
+
+.hit {
+  display: grid;
+  gap: 6px;
+  padding: var(--s-m) var(--s-m);
+  margin-inline: calc(-1 * var(--s-m));
+  box-shadow: inset 0 calc(-1 * var(--hair)) 0 0 var(--line);
+  transition: background var(--dur) var(--ease);
+}
+.hit[aria-selected='true'] {
+  background: var(--fill-soft);
+  box-shadow:
+    inset 2px 0 0 0 var(--accent),
+    inset 0 calc(-1 * var(--hair)) 0 0 var(--line);
+}
+[dir='rtl'] .hit[aria-selected='true'] {
+  box-shadow:
+    inset -2px 0 0 0 var(--accent),
+    inset 0 calc(-1 * var(--hair)) 0 0 var(--line);
+}
+
+.hit__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  opacity: 0.65;
+}
+.hit__meta .lang-badge {
+  margin-inline-start: 0;
+}
+
+.hit__title {
+  font-family: var(--f-display);
+  font-size: var(--t-title);
+  line-height: 1.15;
+}
+.hit__title:lang(ar) {
+  font-family: var(--f-display-ar);
+  line-height: 1.45;
+}
+.hit__title:lang(en) {
+  font-family: var(--f-display-la);
+}
+
+.hit__snippet {
+  font-family: var(--f-read);
+  font-size: var(--t-small);
+  line-height: 1.6;
+  opacity: 0.75;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hit__snippet:lang(ar) {
+  font-family: var(--f-read-ar);
+  font-size: 16px;
+}
+.hit__snippet:lang(en) {
+  font-family: var(--f-read-la);
+}
+
+/* matches: the accent colour the rest of the site uses for hover */
+.hit mark {
+  background: var(--accent);
+  color: var(--ink);
+  padding-inline: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search,
+  .search[data-open='true'],
+  .menu__search,
+  .menu[data-open='true'] .menu__search {
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+   FILTERS — writing (language, tags) and library (category)
+   Chips are buttons with aria-pressed; counts are faceted, so a chip shows
+   how many items it would leave given the OTHER active filters, and chips
+   that would leave none are disabled rather than hidden (the taxonomy stays
+   visible, nothing jumps).
+   ========================================================================= */
+
+.filters {
+  display: grid;
+  gap: var(--s-l);
+  margin-block-end: var(--s-3xl);
+}
+
+/* hidden until the script enables it; without JS every item simply shows */
+.filters[hidden] {
+  display: none;
+}
+
+.filters__group {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  align-items: baseline;
+  gap: var(--s-m);
+}
+.filters__key {
+  opacity: 0.55;
+  padding-block-start: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5em;
+  padding: 6px 9px;
+  font-family: var(--f-mono);
+  font-size: var(--t-meta);
+  letter-spacing: var(--tr-chrome);
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--fg);
+  box-shadow: inset 0 0 0 var(--hair) var(--line-strong);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+/* a chip whose label is Arabic takes the Arabic UI face, untracked */
+.chip:lang(ar) {
+  font-family: var(--f-ui-ar);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.chip:hover:not([aria-disabled='true']) {
+  background: var(--fill-soft);
+}
+.chip[aria-pressed='true'] {
+  background: var(--fg);
+  color: var(--bg);
+}
+.chip[aria-disabled='true'] {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.chip__n {
+  font-family: var(--f-mono);
+  font-size: var(--t-legend);
+  letter-spacing: var(--tr-chrome);
+  opacity: 0.6;
+}
+
+.chip--more {
+  box-shadow: inset 0 0 0 var(--hair) var(--line);
+  opacity: 0.7;
+}
+
+.filters__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  padding-block-start: var(--s-m);
+  box-shadow: inset 0 var(--hair) 0 0 var(--line);
+}
+.filters__count {
+  opacity: 0.6;
+}
+.filters__clear {
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+  opacity: 0.75;
+}
+.filters__clear[hidden] {
+  display: none;
+}
+
+/* rows re-entering after a filter change */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.row[data-entering] {
+  animation: row-in 0.35s var(--ease) both;
+}
+
+.filters__empty {
+  padding-block: var(--s-3xl);
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .filters__group {
+    grid-template-columns: 1fr;
+    gap: var(--s-s);
+  }
+  .filters__key {
+    padding-block-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row[data-entering] {
+    animation: none;
   }
 }

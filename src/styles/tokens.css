@@ -10,17 +10,29 @@
 @property --ink {
   syntax: '<color>';
   inherits: true;
-  initial-value: #7900f2;
+  initial-value: #2b5c98;
 }
 
 /* ---- THEMES --------------------------------------------------------------
-   Three historical manuscript pigments. Lapis is the RGB-cube corner itself;
-   saffron and malachite are the same HUES as their corners (#f27900, #00f279)
-   deepened to lapis's luminance. The raw corners are unusable as ink: against
-   paper, #f27900 is 2.50:1 and #00f279 is 1.34:1, well under the 4.5:1 body
-   text needs. Deepened, all three sit at ~6.1:1, so contrast is identical
-   whichever theme is active. */
+   Four inks, all at ~6.1:1 against paper so contrast is identical whichever
+   is active (body text needs 4.5:1).
+
+   CYANOTYPE — the default. Taken from the owner's cyanotype print: the
+   image's dominant field blue (#5585b7) is only 3.46:1, so this is the point
+   on the image's OWN tonal line, from that field blue toward its deepest blue
+   (#0e4083), where contrast reaches the other themes'. A colour the print
+   actually contains, not an invented one.
+
+   LAPIS is the RGB-cube corner itself. SAFFRON and MALACHITE keep the hues of
+   their corners (#f27900, #00f279) deepened to lapis's luminance; raw, they
+   are 2.50:1 and 1.34:1 — unreadable as ink.
+
+   Every ink must stay <= paper (#f2) in every channel, or .duo images tint
+   (see base.css). */
 :root,
+:root[data-theme='cyanotype'] {
+  --ink: #2b5c98;
+}
 :root[data-theme='lapis'] {
   --ink: #7900f2;
 }

@@ -1,0 +1,38 @@
+---
+import { COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  /** icon: a nav control. bar: a full-width field-shaped trigger for index pages. */
+  variant?: 'icon' | 'bar';
+  class?: string;
+}
+const { lang, variant = 'icon', class: extra = '' } = Astro.props;
+const t = COPY[lang];
+---
+
+<!--
+  Opens the one site-wide search (Search.astro). The "bar" variant looks like a
+  field but is a button: there is a single search, and it spans writing AND
+  books, so an index page shouldn't grow a second, narrower one.
+-->
+<button
+  type="button"
+  class={`searchbtn searchbtn--${variant} ${extra}`.trim()}
+  data-search-open
+  aria-controls="site-search"
+  aria-expanded="false"
+  aria-label={variant === 'icon' ? t.search : undefined}
+>
+  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="8.5" cy="8.5" r="6" /><path d="M13 13l5 5" />
+  </svg>
+  {
+    variant === 'bar' && (
+      <>
+        <span class="searchbtn__text ui">{t.searchPlaceholder}</span>
+        <kbd class="searchbtn__key chrome" aria-hidden="true">/</kbd>
+      </>
+    )
+  }
+</button>

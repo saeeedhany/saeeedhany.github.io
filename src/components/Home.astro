@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { getPosts, plateFor, postHref } from '../data/posts';
 import CvSelector from './CvSelector.astro';
 import Plate from './Plate.astro';
 import { baseFor, COPY, EPIGRAPH, CATEGORY_ORDER, fmtDate, slugOf, type Lang } from '../data/site';
@@ -16,9 +17,7 @@ const base = baseFor(lang);
  * not translations of each other, so filtering by the current site language
  * would hide half the writing. Each entry carries an AR/EN badge instead.
  */
-const writing = (await getCollection('writing', (e) => !e.data.draft)).sort(
-  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
-);
+const writing = await getPosts();
 
 const latest = writing.slice(0, 6);
 
@@ -34,11 +33,6 @@ const shelves = CATEGORY_ORDER.map((cat) => ({
   items: books.filter((b) => b.data.category === cat),
 })).filter((s) => s.items.length > 0);
 
-/** Plates cycle deterministically, so the grid looks composed before any post
- *  has been annotated with its own `plate`. */
-const POOL = ['fixed-stars', 'pharmacy', 'astrolabe', 'optics', 'anatomy', 'elephant-clock'];
-const plateFor = (entry: (typeof writing)[number], i: number) =>
-  entry.data.plate ?? POOL[i % POOL.length];
 
 const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '');
 ---
@@ -91,7 +85,7 @@ const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '');
         <div class="writing-grid">
           {latest.map((entry, i) => (
             <article class="entry">
-              <a href={`/writing/${slugOf(entry.id)}`} aria-hidden="true" tabindex="-1">
+              <a href={postHref(entry, lang)} aria-hidden="true" tabindex="-1">
                 <Plate name={plateFor(entry, i)} lang={lang} shape="square" />
               </a>
               <p class="entry__meta chrome">
@@ -100,7 +94,7 @@ const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '');
                 <span class="lang-badge">{entry.data.lang}</span>
               </p>
               <h3 class="display display--sub" lang={entry.data.lang}>
-                <a class="entry__title" href={`/writing/${slugOf(entry.id)}`} dir="auto">
+                <a class="entry__title" href={postHref(entry, lang)} dir="auto">
                   {entry.data.title}
                 </a>
               </h3>

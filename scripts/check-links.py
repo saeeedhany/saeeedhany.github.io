@@ -15,7 +15,7 @@ import pathlib
 import re
 import sys
 from html.parser import HTMLParser
-from urllib.parse import unquote, urldefrag
+from urllib.parse import unquote, urldefrag, urlsplit
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
@@ -65,6 +65,9 @@ def main() -> int:
         src = page.relative_to(DIST).as_posix()
         for tag, raw in parser.found:
             link, _frag = urldefrag(raw.strip())
+            # a query string (?tag=…) addresses the same static page; check
+            # the page, not the literal "?…" filename
+            link = urlsplit(link).path if link.startswith("/") else link
             if not link or link.startswith(SKIP_SCHEMES):
                 continue
             if not link.startswith("/"):

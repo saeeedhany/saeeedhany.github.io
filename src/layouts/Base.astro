@@ -9,7 +9,8 @@ import Nav from '../components/Nav.astro';
 import StickyNav from '../components/StickyNav.astro';
 import Footer from '../components/Footer.astro';
 import Menu from '../components/Menu.astro';
-import { COPY, SITE, THEMES, type Lang } from '../data/site';
+import Search from '../components/Search.astro';
+import { COPY, SITE, THEMES, switchLangPath, type Lang } from '../data/site';
 
 interface Props {
   lang: Lang;
@@ -17,9 +18,17 @@ interface Props {
   description?: string;
   /** surface of the first band, so the nav can invert to match */
   navSurface?: 'ink' | 'paper';
+  /** absolute path to prefer in search results, when this page is a copy */
+  canonical?: string;
+  /** false when the other-language page is the same text in different chrome
+   *  (posts), so it must not be announced as a translation */
+  translated?: boolean;
 }
 
-const { lang, title, description, navSurface = 'ink' } = Astro.props;
+const { lang, title, description, navSurface = 'ink', canonical, translated = true } = Astro.props;
+// the same page in the other language — the switch never drops you on home
+const altHref = switchLangPath(Astro.url.pathname, lang);
+const siteUrl = Astro.site ?? 'https://saeeedhany.github.io';
 const t = COPY[lang];
 const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
 const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
@@ -43,8 +52,8 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
         }
       } catch (e) {}
     </script>
-    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site ?? 'https://saeeedhany.github.io')} />
-    <link rel="alternate" hreflang={lang === 'ar' ? 'en' : 'ar'} href={t.otherLangHref} />
+    <link rel="canonical" href={new URL(canonical ?? Astro.url.pathname, siteUrl)} />
+    {translated && <link rel="alternate" hreflang={lang === 'ar' ? 'en' : 'ar'} href={new URL(altHref, siteUrl)} />}
     <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
     <meta property="og:type" content="website" />
@@ -62,17 +71,20 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
     <Footer lang={lang} reveal={true} />
 
     <!-- condensed nav that drops in once the hero is past -->
-    <StickyNav lang={lang} />
+    <StickyNav lang={lang} altHref={altHref} />
 
     <div class="page">
-      <Nav lang={lang} surface={navSurface} />
+      <Nav lang={lang} surface={navSurface} altHref={altHref} />
       <main id="main">
         <slot />
       </main>
     </div>
 
     <!-- mobile menu; inert and clipped away until opened -->
-    <Menu lang={lang} />
+    <Menu lang={lang} altHref={altHref} />
+
+    <!-- site-wide search over writing and books; inert until opened -->
+    <Search lang={lang} />
 
     <!-- tiled grain, replacing the reference's WebGL canvas -->
     <div class="grain" aria-hidden="true"></div>
@@ -192,7 +204,7 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
       const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
 
       const syncSwitches = () => {
-        const current = root.dataset.theme ?? 'lapis';
+        const current = root.dataset.theme ?? document.querySelector<HTMLElement>('[data-theme-set]')?.dataset.themeSet;
         for (const b of document.querySelectorAll<HTMLElement>('[data-theme-set]')) {
           b.setAttribute('aria-pressed', String(b.dataset.themeSet === current));
         }
@@ -216,6 +228,20 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
       // Only now allow --ink to transition. Two frames so the first paint has
       // committed with the saved theme; otherwise it would animate in on load.
       requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('theme-ready')));
+
+      // ---- scroll lock --------------------------------------------------------
+      // Shared by the menu (below) and the search overlay (Search.astro, via
+      // events), so the two can never disagree about whether Lenis is running.
+      const lock = () => {
+        root.classList.add('menu-open');
+        lenis?.stop();
+      };
+      const unlock = () => {
+        root.classList.remove('menu-open');
+        lenis?.start();
+      };
+      document.addEventListener('site:lock', lock);
+      document.addEventListener('site:unlock', unlock);
 
       // ---- menu ---------------------------------------------------------------
       // Opening makes every OTHER top-level element inert, which contains focus
@@ -245,8 +271,7 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
           menu.dataset.open = 'true';
           setExpanded(true);
           rest().forEach((el) => (el.inert = true));
-          root.classList.add('menu-open');
-          lenis?.stop();
+          lock();
           // focus once the curtain has started, so the ring doesn't flash first
           setTimeout(() => closeBtn?.focus({ preventScroll: true }), reduce.matches ? 0 : 120);
         };
@@ -257,12 +282,13 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
           menu.inert = true;
           setExpanded(false);
           rest().forEach((el) => (el.inert = wasInert.has(el)));
-          root.classList.remove('menu-open');
-          lenis?.start();
+          unlock();
           if (restoreFocus) returnTo?.focus({ preventScroll: true });
         };
 
         openers.forEach((b) => b.addEventListener('click', () => open(b)));
+        // search asks the menu to close before it opens over the same space
+        document.addEventListener('menu:close', () => close(false));
         closeBtn?.addEventListener('click', () => close());
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') close();

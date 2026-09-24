@@ -1,0 +1,409 @@
+---
+import { getCollection } from 'astro:content';
+import { getPosts } from '../data/posts';
+import { COPY, baseFor, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const posts = (await getPosts()).length;
+const books = (await getCollection('books', (e) => !e.data.draft)).length;
+
+// labels the client script needs; everything else is rendered here
+const i18n = {
+  writing: t.writing,
+  library: t.library,
+  none: t.searchNone,
+  hint: t.searchHint(posts, books),
+  categories: t.categories,
+  status: t.status,
+};
+---
+
+<!--
+  Site-wide search across writing AND books. One per page, opened by any
+  [data-search-open] control or the "/" and Ctrl/Cmd+K shortcuts.
+
+  Same mechanics as the menu: a clip-path curtain, everything else made inert
+  while open (containing focus without a hand-written trap), scrolling locked,
+  focus returned on close. It is an ARIA combobox: the input owns a listbox of
+  results, arrow keys move an active option, Enter opens it.
+-->
+<div
+  class="search s-ink"
+  id="site-search"
+  data-search
+  data-open="false"
+  data-base={baseFor(lang)}
+  data-i18n={JSON.stringify(i18n)}
+  role="dialog"
+  aria-modal="true"
+  aria-label={t.search}
+  inert
+>
+  <div class="search__body container">
+    <div class="search__bar">
+      <svg class="search__glass" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+        <circle cx="8.5" cy="8.5" r="6" /><path d="M13 13l5 5" />
+      </svg>
+      <input
+        class="search__input"
+        type="search"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="search-results"
+        aria-autocomplete="list"
+        aria-label={t.searchPlaceholder}
+        placeholder={t.searchPlaceholder}
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
+        dir="auto"
+        data-search-input
+      />
+      <button type="button" class="menu__close search__close" data-search-close>
+        <span class="burger__label ui">{t.close}</span>
+        <span class="menu__x" aria-hidden="true"><span></span><span></span></span>
+      </button>
+    </div>
+
+    <p class="search__status chrome chrome--intl" aria-live="polite" data-search-status>{i18n.hint}</p>
+    <div class="search__results" id="search-results" role="listbox" aria-label={t.search} data-search-results></div>
+  </div>
+</div>
+
+<script>
+  type Post = { type: 'post'; slug: string; lang: 'en' | 'ar'; title: string; description: string; tags: string[]; date: string; body: string };
+  type Book = { type: 'book'; slug: string; title: string; author: string; category: string; status: string; year: number | null; description: string; tags: string[]; body: string };
+  type Doc = Post | Book;
+
+  const root = document.querySelector<HTMLElement>('[data-search]');
+  if (root) {
+    const input = root.querySelector<HTMLInputElement>('[data-search-input]')!;
+    const status = root.querySelector<HTMLElement>('[data-search-status]')!;
+    const list = root.querySelector<HTMLElement>('[data-search-results]')!;
+    const closeBtn = root.querySelector<HTMLElement>('[data-search-close]')!;
+    const base = root.dataset.base ?? '';
+    const i18n = JSON.parse(root.dataset.i18n ?? '{}');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---- normalisation --------------------------------------------------
+    // Arabic is matched without tashkeel or tatweel, and with the letter
+    // variants people type interchangeably folded together. `map` records,
+    // for every character of the folded string, where it came from in the
+    // original — so a match found in folded text can be highlighted in the
+    // original, diacritics and all.
+    const FOLD: Record<string, string> = { 'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ٱ': 'ا', 'ى': 'ي', 'ة': 'ه', 'ؤ': 'و', 'ئ': 'ي' };
+    const SKIP = /[ً-ٰٟـ]/;
+    function fold(s: string): { text: string; map: number[] } {
+      let text = '';
+      const map: number[] = [];
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (SKIP.test(ch)) continue;
+        const f = (FOLD[ch] ?? ch).toLowerCase();
+        text += f;
+        for (let k = 0; k < f.length; k++) map.push(i);
+      }
+      return { text, map };
+    }
+    const tokensOf = (q: string) => fold(q).text.split(/[\s,،.;:!?()\[\]"'`]+/).filter(Boolean);
+
+    /** Every position of `tok` in `text`. One-character tokens ("c") count
+     *  only as whole words: as substrings they'd match nearly everything. */
+    const WORD = /[\p{L}\p{N}]/u;
+    function positions(text: string, tok: string): number[] {
+      const out: number[] = [];
+      let at = text.indexOf(tok);
+      while (at >= 0) {
+        const whole = !WORD.test(text[at - 1] ?? '') && !WORD.test(text[at + tok.length] ?? '');
+        if (tok.length > 1 || whole) out.push(at);
+        at = text.indexOf(tok, at + 1);
+      }
+      return out;
+    }
+
+    // ---- index ------------------------------------------------------------
+    type Entry = { doc: Doc; f: Record<string, string> };
+    let entries: Entry[] | null = null;
+    let loading: Promise<void> | null = null;
+    const load = () =>
+      (loading ??= fetch('/search.json')
+        .then((r) => r.json())
+        .then((data: { posts: Post[]; books: Book[] }) => {
+          entries = [...data.posts, ...data.books].map((doc) => ({
+            doc,
+            f: {
+              title: fold(doc.title).text,
+              tags: fold(doc.tags.join(' ')).text,
+              meta: fold(doc.type === 'book' ? `${doc.author} ${doc.category} ${i18n.categories?.[doc.category] ?? ''}` : '').text,
+              description: fold(doc.description).text,
+              body: fold(doc.body).text,
+            },
+          }));
+        })
+        .catch(() => {
+          loading = null; // allow a retry on next open
+        }));
+
+    // Every token must appear somewhere (AND). Where it appears sets the
+    // weight: a title hit outranks a tag, a tag a description, and so on.
+    const WEIGHT: Record<string, number> = { title: 12, tags: 7, meta: 6, description: 3, body: 1 };
+    function score(e: Entry, tokens: string[]): number {
+      let total = 0;
+      for (const tok of tokens) {
+        let best = 0;
+        for (const [field, text] of Object.entries(e.f)) {
+          const at = positions(text, tok)[0];
+          if (at === undefined) continue;
+          const wordStart = at === 0 || /\s/.test(text[at - 1]);
+          best = Math.max(best, WEIGHT[field] * (wordStart ? 1.5 : 1));
+        }
+        if (!best) return 0;
+        total += best;
+      }
+      return total;
+    }
+
+    // ---- rendering (DOM, never innerHTML: titles are author text) --------
+    function highlighted(original: string, tokens: string[]): DocumentFragment {
+      const { text, map } = fold(original);
+      const marks: [number, number][] = [];
+      for (const tok of tokens) {
+        for (const at of positions(text, tok)) marks.push([map[at], map[at + tok.length - 1] + 1]);
+      }
+      marks.sort((a, b) => a[0] - b[0]);
+      const frag = document.createDocumentFragment();
+      let cursor = 0;
+      for (const [s, e] of marks) {
+        if (s < cursor) continue;
+        frag.append(original.slice(cursor, s));
+        const m = document.createElement('mark');
+        m.textContent = original.slice(s, e);
+        frag.append(m);
+        cursor = e;
+      }
+      frag.append(original.slice(cursor));
+      return frag;
+    }
+
+    /** ~150 chars of the body around the first token found in it */
+    function snippet(e: Entry, tokens: string[]): string | null {
+      const body = e.doc.body;
+      if (!body) return null;
+      const { text, map } = fold(body);
+      for (const tok of tokens) {
+        const at = positions(text, tok)[0];
+        if (at === undefined) continue;
+        const o = map[at];
+        const start = Math.max(0, o - 60);
+        const end = Math.min(body.length, o + 90);
+        return (start > 0 ? '… ' : '') + body.slice(start, end).trim() + (end < body.length ? ' …' : '');
+      }
+      return null;
+    }
+
+    const langOf = (d: Doc): 'ar' | 'en' =>
+      d.type === 'post' ? d.lang : /[\u0600-\u06FF]/.test(d.title) ? 'ar' : 'en';
+
+    let active = -1;
+    let options: HTMLAnchorElement[] = [];
+
+    function setActive(i: number) {
+      if (!options.length) return;
+      options[active]?.removeAttribute('aria-selected');
+      active = (i + options.length) % options.length;
+      const o = options[active];
+      o.setAttribute('aria-selected', 'true');
+      input.setAttribute('aria-activedescendant', o.id);
+      o.scrollIntoView({ block: 'nearest' });
+    }
+
+    function render() {
+      const tokens = tokensOf(input.value);
+      list.replaceChildren();
+      options = [];
+      active = -1;
+      input.removeAttribute('aria-activedescendant');
+
+      if (!tokens.length) {
+        status.textContent = i18n.hint;
+        input.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      if (!entries) {
+        status.textContent = '…';
+        return;
+      }
+
+      const hits = entries
+        .map((e) => ({ e, s: score(e, tokens) }))
+        .filter((h) => h.s > 0)
+        .sort((a, b) => b.s - a.s);
+
+      if (!hits.length) {
+        status.textContent = `${i18n.none} “${input.value.trim()}”`;
+        input.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      status.textContent = String(hits.length).padStart(2, '0');
+      input.setAttribute('aria-expanded', 'true');
+
+      for (const type of ['post', 'book'] as const) {
+        const group = hits.filter((h) => h.e.doc.type === type);
+        if (!group.length) continue;
+        const g = document.createElement('div');
+        g.className = 'hit-group';
+        g.setAttribute('role', 'group');
+        const label = type === 'post' ? i18n.writing : i18n.library;
+        g.setAttribute('aria-label', label);
+        const h = document.createElement('p');
+        h.className = 'hit-group__head chrome chrome--intl';
+        h.setAttribute('aria-hidden', 'true');
+        h.textContent = `${label} · ${String(group.length).padStart(2, '0')}`;
+        g.append(h);
+
+        for (const { e } of group) {
+          const d = e.doc;
+          const a = document.createElement('a');
+          a.className = 'hit';
+          a.id = `hit-${options.length}`;
+          a.setAttribute('role', 'option');
+          a.href = d.type === 'post' ? `${base}/writing/${d.slug}` : `${base}/books/${d.slug}`;
+
+          const meta = document.createElement('span');
+          meta.className = 'hit__meta chrome';
+          if (d.type === 'post') {
+            const badge = document.createElement('span');
+            badge.className = 'lang-badge';
+            badge.textContent = d.lang;
+            meta.append(badge, ` ${d.date}`);
+          } else {
+            const cat = document.createElement('span');
+            cat.className = 'chrome--intl';
+            cat.textContent = i18n.categories?.[d.category] ?? d.category;
+            meta.append(cat, ` · ${d.author.split(',')[0]}`);
+          }
+
+          const title = document.createElement('span');
+          title.className = 'hit__title';
+          title.dir = 'auto';
+          title.lang = langOf(d);
+          title.append(highlighted(d.title, tokens));
+          a.append(meta, title);
+
+          const s = positions(e.f.title, tokens[0]).length ? d.description || null : snippet(e, tokens) ?? d.description;
+          if (s) {
+            const p = document.createElement('span');
+            p.className = 'hit__snippet';
+            p.dir = 'auto';
+            p.lang = langOf(d);
+            p.append(highlighted(s, tokens));
+            a.append(p);
+          }
+          g.append(a);
+          options.push(a);
+        }
+        list.append(g);
+      }
+      setActive(0);
+    }
+
+    // ---- open / close -----------------------------------------------------
+    let returnTo: HTMLElement | null = null;
+    const others = () =>
+      Array.from(document.body.children).filter(
+        (el): el is HTMLElement => el !== root && el instanceof HTMLElement && el.tagName !== 'SCRIPT',
+      );
+    let wasInert = new Set<HTMLElement>();
+    // rendered AND reachable: the sticky bar's burger is rendered but inert
+    // while the bar is parked off-screen, so focus() on it silently fails
+    const focusable = (el: HTMLElement) => el.getClientRects().length > 0 && !el.closest('[inert]');
+
+    function open(from?: HTMLElement | null) {
+      if (root!.dataset.open === 'true') return;
+      // opened from inside the mobile menu: close it first, and return focus
+      // to a burger afterwards, since the menu button itself will be hidden
+      const inMenu = !!from?.closest('[data-menu]');
+      if (inMenu) document.dispatchEvent(new CustomEvent('menu:close'));
+      returnTo = inMenu
+        ? Array.from(document.querySelectorAll<HTMLElement>('[data-menu-open]')).find(focusable) ?? null
+        : from ?? (document.activeElement as HTMLElement | null);
+
+      load()?.then(render);
+      wasInert = new Set(others().filter((el) => el.inert));
+      root!.inert = false;
+      root!.dataset.open = 'true';
+      others().forEach((el) => (el.inert = true));
+      document.dispatchEvent(new CustomEvent('site:lock'));
+      document.querySelectorAll('[data-search-open]').forEach((b) => b.setAttribute('aria-expanded', 'true'));
+      setTimeout(() => {
+        input.focus({ preventScroll: true });
+        input.select(); // reopening: type straight over the last query
+      }, reduce ? 0 : 140);
+    }
+
+    function close() {
+      if (root!.dataset.open !== 'true') return;
+      root!.dataset.open = 'false';
+      root!.inert = true;
+      others().forEach((el) => (el.inert = wasInert.has(el)));
+      document.dispatchEvent(new CustomEvent('site:unlock'));
+      document.querySelectorAll('[data-search-open]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+      returnTo?.focus({ preventScroll: true });
+    }
+
+    // Delegated listeners can see targets that aren't Elements (the document
+    // itself, a text node), which have no .closest(); resolve safely.
+    const el = (t: EventTarget | null): Element | null =>
+      t instanceof Element ? t : t instanceof Node ? t.parentElement : null;
+
+    document.addEventListener('click', (e) => {
+      const opener = el(e.target)?.closest<HTMLElement>('[data-search-open]');
+      if (opener) {
+        e.preventDefault();
+        open(opener);
+      }
+    });
+    // warm the index as soon as intent shows, so results are instant on open
+    document.addEventListener('pointerover', (e) => {
+      if (el(e.target)?.closest('[data-search-open]')) load();
+    });
+    closeBtn.addEventListener('click', close);
+    input.addEventListener('input', render);
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActive(active + 1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActive(active - 1);
+      } else if (e.key === 'Enter' && options[active]) {
+        e.preventDefault();
+        location.href = options[active].href;
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && root!.dataset.open === 'true') {
+        close();
+        return;
+      }
+      const typing = el(e.target)?.closest('input, textarea, select, [contenteditable="true"]');
+      if ((e.key === '/' && !typing && !e.metaKey && !e.ctrlKey) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
+        e.preventDefault();
+        open(document.activeElement as HTMLElement);
+      }
+    });
+
+    // pointer movement moves the active option too, so Enter and a click
+    // always agree on which result they mean
+    list.addEventListener('pointermove', (e) => {
+      const o = el(e.target)?.closest<HTMLAnchorElement>('.hit');
+      if (o) setActive(options.indexOf(o));
+    });
+  }
+</script>

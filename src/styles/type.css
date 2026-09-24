@@ -15,7 +15,13 @@
    use a real Arabic UI face instead.
    ========================================================================= */
 
-:root {
+/* The Latin defaults are declared on `[lang='en']` as well as :root, so an
+   English subtree inside an Arabic page (an English post read with the
+   Arabic chrome, an English row on the Arabic writing list) gets its own
+   type back. Declared only on :root, the Arabic values set on <html
+   lang="ar"> inherited into it: English titles came out in Reem Kufi. */
+:root,
+[lang='en'] {
   --f-display-la: 'Oswald', 'Arial Narrow', sans-serif;
   --f-read-la: 'IBM Plex Sans', system-ui, sans-serif;
   --f-ui-la: 'IBM Plex Mono', ui-monospace, monospace;
@@ -85,10 +91,10 @@
   --heading-size: clamp(2rem, 1.9rem + 1.5vw, 56px);
 }
 
-/* Absolute guard: nothing may letter-space Arabic, including utility classes. */
-[lang='ar'],
-[lang='ar'] *,
-[dir='rtl'] .u-ar,
+/* Absolute guard: nothing may letter-space Arabic. :lang() resolves to the
+   NEAREST lang attribute, so English content inside an Arabic page is not
+   caught by it — `[lang='ar'] *` was. */
+:lang(ar),
 .ar-text {
   letter-spacing: 0;
 }
@@ -216,11 +222,12 @@
   font-size: var(--t-read);
   line-height: var(--lh-reading);
   max-width: var(--measure);
+  /* sit at the start of the TEXT's language, not the page's (see .essay__head) */
+  margin-inline-end: auto;
 }
 
 /* Arabic prose gets a shorter measure: at 20px Amiri, 68ch overruns comfort. */
-[lang='ar'] .prose,
-[dir='rtl'] .prose {
+.prose:lang(ar) {
   max-width: 62ch;
 }
 
@@ -286,7 +293,7 @@
   opacity: 0.85;
 }
 
-[dir='rtl'] .prose blockquote {
+.prose blockquote:dir(rtl) {
   box-shadow: inset calc(-1 * var(--hair)) 0 0 0 var(--line-strong);
 }
 

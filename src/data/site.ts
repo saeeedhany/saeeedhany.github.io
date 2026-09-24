@@ -20,7 +20,10 @@ export const SITE = {
  * src/styles/tokens.css — it is repeated here only for the swatch and for
  * <meta name="theme-color">, which can't read a CSS variable.
  */
+// The FIRST entry is the default: it is what renders with no saved choice,
+// what <meta name="theme-color"> starts as, and the swatch pressed by default.
 export const THEMES = [
+  { id: 'cyanotype', ink: '#2b5c98', name: { en: 'Cyanotype', ar: 'سيانوتايب' } },
   { id: 'lapis', ink: '#7900f2', name: { en: 'Lapis', ar: 'لازورد' } },
   { id: 'saffron', ink: '#8f4700', name: { en: 'Saffron', ar: 'زعفران' } },
   { id: 'malachite', ink: '#006935', name: { en: 'Malachite', ar: 'دهنج' } },
@@ -104,6 +107,19 @@ export const COPY = {
     contributions: 'مساهمة',
     less: 'أقل',
     more: 'أكثر',
+    search: 'بحث',
+    searchPlaceholder: 'ابحث في الكتابات والكتب',
+    searchHint: (posts: number, books: number) => `${posts} كتابة و${books} كتب`,
+    searchNone: 'لا نتائج لـ',
+    searchResults: (n: number) => `${n} نتيجة`,
+    filterLang: 'اللغة',
+    filterTags: 'الوسوم',
+    filterCategory: 'التصنيف',
+    showing: 'المعروض',
+    clear: 'مسح',
+    moreTags: (n: number) => `+${n}`,
+    fewerTags: 'أقل',
+    nothingMatches: 'لا شيء يطابق هذه التصفية.',
   },
   en: {
     dir: 'ltr',
@@ -143,6 +159,19 @@ export const COPY = {
     contributions: 'contributions',
     less: 'Less',
     more: 'More',
+    search: 'Search',
+    searchPlaceholder: 'Search writing & books',
+    searchHint: (posts: number, books: number) => `${posts} posts and ${books} books`,
+    searchNone: 'Nothing matches',
+    searchResults: (n: number) => `${n} result${n === 1 ? '' : 's'}`,
+    filterLang: 'Language',
+    filterTags: 'Tags',
+    filterCategory: 'Category',
+    showing: 'Showing',
+    clear: 'Clear',
+    moreTags: (n: number) => `+${n}`,
+    fewerTags: 'Fewer',
+    nothingMatches: 'Nothing matches this filter.',
   },
 } as const;
 
@@ -173,3 +202,21 @@ export function slugOf(id: string): string {
 }
 
 export const CATEGORY_ORDER = ['technical', 'non-fiction', 'fiction', 'garbage'] as const;
+
+export function dirFor(lang: Lang): 'rtl' | 'ltr' {
+  return lang === 'ar' ? 'rtl' : 'ltr';
+}
+
+/**
+ * The same page in the other language. Every route exists under both
+ * prefixes — including posts, whose CHROME follows the site language while
+ * their text keeps its own — so switching language never throws the reader
+ * back to the home page. Only the English-only 404 falls back to home.
+ */
+export function switchLangPath(pathname: string, lang: Lang): string {
+  const path = pathname.replace(/\/index\.html$/, '/');
+  if (/^\/(ar\/)?404/.test(path)) return lang === 'en' ? '/ar' : '/';
+  if (lang === 'en') return path === '/' ? '/ar' : `/ar${path}`;
+  const stripped = path.replace(/^\/ar(?=\/|$)/, '');
+  return stripped === '' ? '/' : stripped;
+}

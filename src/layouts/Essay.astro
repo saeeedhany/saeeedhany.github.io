@@ -1,46 +1,62 @@
 ---
 import Base from './Base.astro';
 import Plate from '../components/Plate.astro';
-import { COPY, baseFor, fmtDate, type Lang } from '../data/site';
+import { COPY, baseFor, dirFor, fmtDate, type Lang } from '../data/site';
 
 interface Props {
+  /** the SITE language: navigation, footer, labels. Stays whatever the reader chose. */
   lang: Lang;
+  /** the POST's language: its title, description, tags and body */
+  contentLang: Lang;
   title: string;
   date: Date;
   description?: string;
   tags?: string[];
   plate?: string;
   index?: string;
-  kicker?: string;
+  canonical?: string;
 }
 
-const { lang, title, date, description, tags = [], plate, index, kicker } = Astro.props;
+const { lang, contentLang, title, date, description, tags = [], plate, index, canonical } = Astro.props;
 const t = COPY[lang];
 const base = baseFor(lang);
+const cdir = dirFor(contentLang);
 ---
 
-<Base lang={lang} title={title} description={description} navSurface="ink">
-  <!-- head band on ink, body on paper: the reading surface is the paper one -->
+<!--
+  Two languages on one page, on purpose. An Arabic essay read from the English
+  site keeps the English navigation, and vice versa — the reader changes the
+  site language, not the post they open.
+
+  Everything the POST wrote carries lang/dir of its own, which is all the type
+  system keys off: the [lang='ar'] rules in type.css switch the display and
+  reading faces, leading, size and tracking for that subtree only.
+-->
+<Base lang={lang} title={title} description={description} navSurface="ink" canonical={canonical} translated={false}>
   <article>
     <header class="band band--tight s-ink">
       <div class="container">
         <p class="essay__meta chrome" style="margin-block-end: var(--s-xl)">
           {index && <span>#{index}</span>}
-          {kicker && <span class="chrome--intl">{kicker}</span>}
           <span>{fmtDate(date)}</span>
-          <span>{lang.toUpperCase()}</span>
+          <span class="lang-badge">{contentLang}</span>
         </p>
 
-        <div class="essay__head">
-          <h1 class="display display--heading" dir="auto">{title}</h1>
+        <div class="essay__head" lang={contentLang} dir={cdir}>
+          <h1 class="display display--heading">{title}</h1>
           {description && <p class="read read--lead" style="opacity:.85">{description}</p>}
         </div>
 
         {
           tags.length > 0 && (
-            <div class="tags" style="margin-block-start: var(--s-xl)">
+            <div class="tags" style="margin-block-start: var(--s-xl)" lang={contentLang} dir={cdir}>
               {tags.map((tag) => (
-                <span class="pill chrome chrome--info chrome--intl">{tag}</span>
+                <a
+                  class="pill chrome chrome--info chrome--intl"
+                  href={`${base}/writing?tag=${encodeURIComponent(tag)}`}
+                >
+                  {tag}
+                </a>
               ))}
             </div>
           )
@@ -58,7 +74,7 @@ const base = baseFor(lang);
           )
         }
 
-        <div class="prose essay__body" style="margin-block-start: 0">
+        <div class="prose essay__body" style="margin-block-start: 0" lang={contentLang} dir={cdir}>
           <slot />
         </div>
 

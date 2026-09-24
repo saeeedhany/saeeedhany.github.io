@@ -1,9 +1,9 @@
 ---
 import { render } from 'astro:content';
-import Essay from '../../layouts/Essay.astro';
-import { postPaths, plateFor, postCanonical } from '../../data/posts';
+import Essay from '../../../layouts/Essay.astro';
+import { postPaths, plateFor, postCanonical } from '../../../data/posts';
 
-// Every post, English chrome. Its Arabic-chrome twin is /ar/writing/[...id].
+// Every post, Arabic chrome. Its English-chrome twin is /writing/[...id].
 export const getStaticPaths = postPaths;
 
 const { post, rank, number } = Astro.props;
@@ -11,7 +11,7 @@ const { Content } = await render(post);
 ---
 
 <Essay
-  lang="en"
+  lang="ar"
   contentLang={post.data.lang}
   title={post.data.title}
   date={post.data.date}

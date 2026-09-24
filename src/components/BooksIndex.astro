@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import SearchButton from './SearchButton.astro';
 import { baseFor, COPY, CATEGORY_ORDER, slugOf, type Lang } from '../data/site';
 
 interface Props {
@@ -12,6 +13,8 @@ const base = baseFor(lang);
 const books = (await getCollection('books', (e) => !e.data.draft)).sort((a, b) =>
   a.data.title.localeCompare(b.data.title),
 );
+
+const countIn = (cat: string) => books.filter((b) => b.data.category === cat).length;
 
 const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '—');
 ---
@@ -27,18 +30,43 @@ const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '—
       </span>
     </div>
 
+    <!-- category filter; the library is already grouped by category, so a
+         choice hides the other groups rather than reshuffling rows -->
+    <div class="filters" data-filters="books" hidden>
+      <SearchButton lang={lang} variant="bar" />
+      <div class="filters__group" role="group" aria-labelledby="f-cat">
+        <span id="f-cat" class="filters__key chrome chrome--intl">{t.filterCategory}</span>
+        <div class="chips">
+          <button type="button" class="chip" data-f="category" data-v="" aria-pressed="true">
+            {t.all} <span class="chip__n" data-n></span>
+          </button>
+          {
+            CATEGORY_ORDER.map((cat) => (
+              <button type="button" class="chip" data-f="category" data-v={cat} aria-pressed="false">
+                {t.categories[cat]} <span class="chip__n" data-n>{String(countIn(cat)).padStart(2, '0')}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+      <div class="filters__foot">
+        <span class="filters__count chrome chrome--intl" aria-live="polite" data-count data-label={t.showing}></span>
+        <button type="button" class="filters__clear chrome chrome--intl" data-clear hidden>{t.clear}</button>
+      </div>
+    </div>
+
     {
       CATEGORY_ORDER.map((cat) => {
         const items = books.filter((b) => b.data.category === cat);
         if (!items.length) return null;
         return (
-          <div style="margin-block-end: var(--s-4xl)">
+          <div style="margin-block-end: var(--s-4xl)" data-group>
             <h2 class="chrome chrome--label chrome--intl" style="margin-block-end: var(--s-l); opacity:.7">
               {t.categories[cat]} · {String(items.length).padStart(2, '0')}
             </h2>
             <div class="rows">
               {items.map((b) => (
-                <a class="row" href={`${base}/books/${slugOf(b.id)}`}>
+                <a class="row" data-item data-category={b.data.category} href={`${base}/books/${slugOf(b.id)}`}>
                   <span class="row__meta chrome chrome--intl" data-status={b.data.status}>
                     {t.status[b.data.status]}
                   </span>
@@ -60,5 +88,14 @@ const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '—
         );
       })
     }
+    <p class="filters__empty read" data-empty hidden>{t.nothingMatches}</p>
   </div>
 </section>
+
+<script>
+  import { initFilters } from '../scripts/filters';
+
+  initFilters('books', {
+    category: (el, v) => el.dataset.category === v,
+  });
+</script>

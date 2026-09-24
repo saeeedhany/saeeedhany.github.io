@@ -1,12 +1,15 @@
 ---
 import ThemeSwitch from './ThemeSwitch.astro';
 import Burger from './Burger.astro';
+import SearchButton from './SearchButton.astro';
 import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
 
 interface Props {
   lang: Lang;
+  /** this same page in the other language */
+  altHref: string;
 }
-const { lang } = Astro.props;
+const { lang, altHref } = Astro.props;
 const t = COPY[lang];
 const mark = SITE.mark[lang];
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
@@ -42,10 +45,11 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
                 </a>
               ))
             }
-            <a class="nav__link chrome" href={t.otherLangHref} lang={lang === 'ar' ? 'en' : 'ar'}>
+            <a class="nav__link chrome" href={altHref} lang={lang === 'ar' ? 'en' : 'ar'}>
               {t.otherLang}
             </a>
           </nav>
+          <SearchButton lang={lang} />
           <ThemeSwitch lang={lang} class="navbar__theme" />
           <Burger lang={lang} class="navbar__burger" />
         </div>

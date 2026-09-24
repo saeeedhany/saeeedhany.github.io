@@ -8,6 +8,13 @@
   box-sizing: border-box;
 }
 
+/* The UA's `[hidden] { display: none }` loses to any class that sets
+   display (.row is grid, .chip is inline-flex), so `el.hidden = true` would
+   silently do nothing. The filters and search rely on it. */
+[hidden] {
+  display: none !important;
+}
+
 * {
   margin: 0;
   /* zero radius. everywhere. the one exception is the CV tab end-caps. */
