@@ -35,7 +35,14 @@ function create() {
   };
 
   const emit = () => listeners.forEach((fn) => fn({ ...s }));
-  const savePos = () => s.track && store.set(posKey(s.track.src), String(Math.floor(audio.currentTime || s.time)));
+  const savePos = () => {
+    if (!s.track) return;
+    // Nothing loaded since this track was set (e.g. restored after a reload):
+    // storage already holds the reader's position, so don't overwrite it with
+    // the resume policy's answer. A seek made before loading still counts.
+    if (audio.readyState === 0 && !pendingSeek) return;
+    store.set(posKey(s.track.src), String(Math.floor(audio.readyState ? audio.currentTime : pendingSeek)));
+  };
 
   function load(track: Track) {
     if (s.track) savePos();

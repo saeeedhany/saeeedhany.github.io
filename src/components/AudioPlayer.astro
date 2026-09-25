@@ -1,0 +1,92 @@
+---
+import { COPY } from '../data/site';
+
+// Persisted across navigation (transition:persist), so it can't re-render
+// when the language changes. It carries both languages' labels and the
+// script applies the current page's set on every page.
+const labels = Object.fromEntries(
+  (['en', 'ar'] as const).map((l) => [
+    l,
+    { play: COPY[l].play, pause: COPY[l].pause, speed: COPY[l].speed, stop: COPY[l].stopAudio, back: COPY[l].back15, fwd: COPY[l].fwd15 },
+  ]),
+);
+---
+
+<div class="mini s-ink" data-mini data-labels={JSON.stringify(labels)} hidden transition:persist="mini-player">
+  <div class="mini__progress" aria-hidden="true"><span data-mini-bar></span></div>
+  <div class="mini__row container" dir="ltr">
+    <button type="button" class="mini__btn" data-mini-a="back">−15</button>
+    <button type="button" class="mini__play" data-mini-a="toggle" aria-pressed="false">
+      <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+      <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor" /></svg>
+    </button>
+    <button type="button" class="mini__btn" data-mini-a="fwd">+15</button>
+    <a class="mini__title" data-mini-title href="/"></a>
+    <span class="mini__kind chrome" data-mini-kind></span>
+    <span class="mini__time chrome" data-mini-time>0:00</span>
+    <button type="button" class="mini__btn chrome" data-mini-a="rate">1×</button>
+    <button type="button" class="mini__btn mini__stop" data-mini-a="stop">✕</button>
+  </div>
+</div>
+
+<script>
+  import { onPage, once } from '../scripts/lifecycle';
+  import { cycleRate, skip, stop, subscribe, toggle } from '../scripts/player';
+  import { formatTime, parseTrack, sameTrack } from '../scripts/audio-core';
+
+  const root = () => document.querySelector<HTMLElement>('[data-mini]');
+  // tracks with a full player on the current page; the bar hides for these
+  let pageTracks: (ReturnType<typeof parseTrack>)[] = [];
+  let labels: Record<string, string> = {};
+
+  // Bound once: the bar element persists, so its listeners must not be re-added.
+  once('mini:bind', () => {
+    const bar = root();
+    if (!bar) return;
+    bar.addEventListener('click', (e) => {
+      const a = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-mini-a]')?.dataset.miniA : null;
+      if (a === 'toggle') toggle();
+      else if (a === 'back') skip(-15);
+      else if (a === 'fwd') skip(15);
+      else if (a === 'rate') cycleRate();
+      else if (a === 'stop') stop();
+    });
+    const q = <T extends HTMLElement>(sel: string) => bar.querySelector<T>(sel)!;
+    subscribe((st) => {
+      const own = pageTracks.some((t) => sameTrack(t, st.track)); // identity = file, not page
+      const show = !!st.track && !own;
+      bar.hidden = !show;
+      document.documentElement.style.setProperty('--player-h', show ? `${bar.offsetHeight}px` : '0px');
+      if (!st.track) return;
+      const title = q<HTMLAnchorElement>('[data-mini-title]');
+      title.textContent = st.track.title;
+      title.href = st.track.href;
+      title.lang = st.track.lang;
+      title.dir = st.track.lang === 'ar' ? 'rtl' : 'ltr';
+      q('[data-mini-kind]').textContent = st.track.kind === 'talk' ? 'TALK' : 'POST';
+      q('[data-mini-time]').textContent = `${formatTime(st.time)} / ${st.duration ? formatTime(st.duration) : '–:––'}`;
+      q<HTMLElement>('[data-mini-bar]').style.transform = `scaleX(${st.duration ? Math.min(1, st.time / st.duration) : 0})`;
+      const btn = q('[data-mini-a=toggle]');
+      btn.setAttribute('aria-pressed', String(st.playing));
+      btn.setAttribute('aria-label', st.playing ? labels.pause : labels.play);
+      q('[data-mini-a=rate]').textContent = `${st.rate}×`;
+      bar.toggleAttribute('data-loading', st.loading);
+    });
+  });
+
+  // Per page: which language, and is this the playing track's own page?
+  onPage('mini:page', () => {
+    const bar = root();
+    if (!bar) return;
+    const all = JSON.parse(bar.dataset.labels ?? '{}');
+    labels = all[document.documentElement.lang] ?? all.en;
+    bar.querySelector('[data-mini-a=back]')?.setAttribute('aria-label', labels.back);
+    bar.querySelector('[data-mini-a=fwd]')?.setAttribute('aria-label', labels.fwd);
+    bar.querySelector('[data-mini-a=rate]')?.setAttribute('aria-label', labels.speed);
+    bar.querySelector('[data-mini-a=stop]')?.setAttribute('aria-label', labels.stop);
+    pageTracks = [...document.querySelectorAll<HTMLElement>('[data-audio-controls]')].map((el) => parseTrack(el.dataset.track));
+    // re-run the bar's subscriber for this page (visibility, --player-h,
+    // which the swap wiped from <html style>)
+    window.dispatchEvent(new Event('player:refresh'));
+  });
+</script>

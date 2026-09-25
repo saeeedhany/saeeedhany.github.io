@@ -351,3 +351,9 @@ html.lenis body {
    .footer — they must come after it in source order or `.footer {
    position: relative }` wins on equal specificity and the footer never
    becomes fixed. */
+
+/* room for the mini player, so it never covers the end of the page or the
+   footer's links (--player-h is 0px unless the bar is showing) */
+.page { padding-block-end: var(--player-h, 0px); }
+.footer--reveal { padding-block-end: calc(var(--s-2xl) + var(--player-h, 0px)) !important; }
+html { scroll-padding-block-end: var(--player-h, 0px); }
