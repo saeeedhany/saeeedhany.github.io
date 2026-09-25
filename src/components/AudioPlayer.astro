@@ -37,7 +37,7 @@ const labels = Object.fromEntries(
   import { onPage, once } from '../scripts/lifecycle';
   import { cycleRate, skip, stop, subscribe, toggle } from '../scripts/player';
   import type { PlayerState } from '../scripts/player';
-  import { formatTime, parseTrack, sameTrack, type Track } from '../scripts/audio-core';
+  import { formatTime, hrefIn, parseTrack, sameTrack, type Track } from '../scripts/audio-core';
 
   const root = () => document.querySelector<HTMLElement>('[data-mini]');
   // tracks with a full player on the current page; the bar hides for these
@@ -69,7 +69,7 @@ const labels = Object.fromEntries(
     function render(st: PlayerState, track: Track) {
       const title = q<HTMLAnchorElement>('[data-mini-title]');
       title.textContent = track.title;
-      title.href = track.href;
+      title.href = hrefIn(track.href, document.documentElement.lang === 'ar' ? 'ar' : 'en');
       title.lang = track.lang;
       title.dir = track.lang === 'ar' ? 'rtl' : 'ltr';
       q('[data-mini-kind]').textContent = track.kind === 'talk' ? 'TALK' : 'POST';

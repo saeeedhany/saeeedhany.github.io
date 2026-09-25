@@ -46,6 +46,13 @@ export function sameTrack(a?: { src: string } | null, b?: { src: string } | null
   return !!a && !!b && a.src === b.src;
 }
 
+/** A track's page in the language being browsed: the recording's own page is
+ *  served under both prefixes, and the reader should stay in their language. */
+export function hrefIn(href: string, lang: 'en' | 'ar'): string {
+  const bare = href.replace(/^\/ar(?=\/|$)/, '') || '/';
+  return lang === 'ar' ? `/ar${bare}` : bare;
+}
+
 /** Where a recording may live: an https:// host, or a path on this site
  *  ("/audio/x.mp3"). Never plain http, another site via "//", or a relative path. */
 export const isAudioSrc = (s: string) => /^https:\/\//.test(s) || /^\/(?!\/)/.test(s);
