@@ -1,0 +1,28 @@
+---
+interface Props {
+  /** placeholder and accessible name, e.g. "Search writing" */
+  label: string;
+}
+const { label } = Astro.props;
+---
+
+<!--
+  The list's own search: narrows the rows on this page as you type (see
+  scripts/filters.ts). The site-wide search stays in the nav and on / and
+  Ctrl+K. Same field shape as the old bar, so the page looks unchanged.
+-->
+<label class="searchbtn searchbtn--bar pagesearch">
+  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="8.5" cy="8.5" r="6" /><path d="M13 13l5 5" />
+  </svg>
+  <input
+    type="search"
+    class="pagesearch__input ui"
+    data-page-search
+    placeholder={label}
+    aria-label={label}
+    autocomplete="off"
+    spellcheck="false"
+    enterkeyhint="search"
+  />
+</label>

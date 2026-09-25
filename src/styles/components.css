@@ -1603,6 +1603,22 @@ html.menu-open {
   flex: 1;
   opacity: 0.65;
 }
+
+/* the in-page list search: the same field shape, but a real input */
+.pagesearch { cursor: text; }
+.pagesearch__input {
+  flex: 1;
+  min-inline-size: 0;
+  block-size: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.pagesearch__input::placeholder { color: inherit; opacity: 0.65; }
+.pagesearch__input::-webkit-search-cancel-button { display: none; }
+.pagesearch:focus-within { box-shadow: inset 0 0 0 var(--hair) var(--fg); }
 .searchbtn__key {
   padding: 3px 7px;
   box-shadow: inset 0 0 0 var(--hair) var(--line);

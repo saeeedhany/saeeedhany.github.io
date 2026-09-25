@@ -7,16 +7,20 @@
  *   [data-group]                      optional container hidden when empty
  *   [data-n] inside a chip            receives the chip's faceted count
  *   [data-count] [data-clear] [data-empty] [data-more]   status + controls
+ *   [data-page-search]                an optional text field; each item's
+ *                                     data-text holds the text it matches
  *
  * Counts are FACETED: each chip shows how many items it would leave given
  * the other active filters. A chip that would leave none is disabled, not
  * hidden, so the taxonomy stays visible and nothing jumps around.
  *
- * State lives in the URL query (?lang=ar&tag=…) so a filtered view can be
+ * State lives in the URL query (?lang=ar&tag=…&q=…) so a filtered view can be
  * linked to — the tag pills on a post page link straight into one.
  *
  * Without JavaScript the filter bar stays hidden and every item shows.
  */
+
+import { fold, matchesAll, tokensOf } from './fold';
 
 type Predicate = (el: HTMLElement, value: string) => boolean;
 
@@ -33,6 +37,7 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
   const countEl = root.querySelector<HTMLElement>('[data-count]');
   const clearBtn = root.querySelector<HTMLButtonElement>('[data-clear]');
   const moreBtn = root.querySelector<HTMLButtonElement>('[data-more]');
+  const field = root.querySelector<HTMLInputElement>('[data-page-search]');
   const emptyEl = section.querySelector<HTMLElement>('[data-empty]');
   const keys = Object.keys(predicates);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -47,8 +52,15 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
     if (v && chips.some((c) => c.dataset.f === k && c.dataset.v === v)) state[k] = v;
   }
 
+  // text search: every word of the query must appear in the item's text,
+  // with the same Arabic-aware folding as the site-wide search
+  const hay = new Map(items.map((el) => [el, fold(el.dataset.text ?? el.textContent ?? '').text]));
+  let query = field ? (params.get('q') ?? '') : '';
+  let tokens = tokensOf(query);
+  if (field) field.value = query;
+
   const matches = (el: HTMLElement, s: Record<string, string>) =>
-    keys.every((k) => !s[k] || predicates[k](el, s[k]));
+    keys.every((k) => !s[k] || predicates[k](el, s[k])) && matchesAll(hay.get(el) ?? '', tokens);
 
   let expanded = false;
 
@@ -81,7 +93,7 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
       if (chip.hasAttribute('data-overflow')) chip.hidden = !expanded && !pressed;
     }
 
-    const active = keys.some((k) => state[k]);
+    const active = keys.some((k) => state[k]) || tokens.length > 0;
     if (countEl) countEl.textContent = `${countEl.dataset.label ?? ''} ${pad(shown)} / ${pad(items.length)}`;
     if (clearBtn) clearBtn.hidden = !active;
     if (emptyEl) emptyEl.hidden = shown > 0;
@@ -91,6 +103,8 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
       if (state[k]) url.searchParams.set(k, state[k]);
       else url.searchParams.delete(k);
     }
+    if (tokens.length) url.searchParams.set('q', query.trim());
+    else url.searchParams.delete('q');
     history.replaceState(history.state, '', url);
   }
 
@@ -104,8 +118,27 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
     apply(true);
   });
 
+  const setQuery = (q: string) => {
+    query = q;
+    tokens = tokensOf(q);
+  };
+
+  field?.addEventListener('input', () => {
+    setQuery(field.value);
+    apply(false);
+  });
+  field?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !field.value) return;
+    e.preventDefault();
+    field.value = '';
+    setQuery('');
+    apply(false);
+  });
+
   clearBtn?.addEventListener('click', () => {
     for (const k of keys) state[k] = '';
+    if (field) field.value = '';
+    setQuery('');
     apply(true);
   });
 

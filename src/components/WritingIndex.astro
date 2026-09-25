@@ -1,5 +1,5 @@
 ---
-import SearchButton from './SearchButton.astro';
+import PageSearch from './PageSearch.astro';
 import { getPosts, postHref } from '../data/posts';
 import { COPY, fmtDate, type Lang } from '../data/site';
 
@@ -39,7 +39,7 @@ const langs = ['en', 'ar'] as const;
     </div>
 
     <div class="filters" data-filters="writing" hidden>
-      <SearchButton lang={lang} variant="bar" />
+      <PageSearch label={t.searchWriting} />
 
       <div class="filters__group" role="group" aria-labelledby="f-lang">
         <span id="f-lang" class="filters__key chrome chrome--intl">{t.filterLang}</span>
@@ -117,6 +117,7 @@ const langs = ['en', 'ar'] as const;
               lang={post.data.lang}
               data-lang={post.data.lang}
               data-tags={JSON.stringify(post.data.tags)}
+              data-text={[post.data.title, post.data.description ?? '', ...post.data.tags].join(' ')}
             >
               <span class="row__meta chrome">
                 #{String(writing.length - i).padStart(2, '0')}

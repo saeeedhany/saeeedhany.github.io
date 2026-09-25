@@ -1,5 +1,5 @@
 ---
-import SearchButton from './SearchButton.astro';
+import PageSearch from './PageSearch.astro';
 import PlayButton from './PlayButton.astro';
 import { getTalks, talkHref, talkCanonical } from '../data/talks';
 import { COPY, fmtDate, type Lang } from '../data/site';
@@ -32,7 +32,7 @@ const isArabic = (s: string) => /[؀-ۿ]/.test(s);
       ) : (
         <>
           <div class="filters" data-filters="talks" hidden>
-            <SearchButton lang={lang} variant="bar" />
+            <PageSearch label={t.searchTalks} />
             <div class="filters__group" role="group" aria-labelledby="ft-lang">
               <span id="ft-lang" class="filters__key chrome chrome--intl">{t.filterLang}</span>
               <div class="chips">
@@ -69,7 +69,7 @@ const isArabic = (s: string) => /[؀-ۿ]/.test(s);
 
           <div class="rows" data-items>
             {talks.map((talk, i) => (
-              <div class="row row--talk" data-item lang={talk.data.lang} data-lang={talk.data.lang} data-tags={JSON.stringify(talk.data.tags)}>
+              <div class="row row--talk" data-item lang={talk.data.lang} data-lang={talk.data.lang} data-tags={JSON.stringify(talk.data.tags)} data-text={[talk.data.title, talk.data.description ?? '', ...talk.data.tags].join(' ')}>
                 <span class="row__meta chrome">
                   #{String(talks.length - i).padStart(2, '0')}
                   <span class="lang-badge">{talk.data.lang}</span>
