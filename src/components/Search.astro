@@ -15,6 +15,7 @@ const books = (await getCollection('books', (e) => !e.data.draft)).length;
 const i18n = {
   writing: t.writing,
   talks: t.talks,
+  gallery: t.gallery,
   library: t.library,
   none: t.searchNone,
   hint: t.searchHint(posts, books),
@@ -76,13 +77,13 @@ const i18n = {
 </div>
 
 <script>
-  import { navigate } from 'astro:transitions/client';
   import { onPage, shared } from '../scripts/lifecycle';
 
   type Post = { type: 'post'; slug: string; lang: 'en' | 'ar'; title: string; description: string; tags: string[]; date: string; body: string };
   type Book = { type: 'book'; slug: string; title: string; author: string; category: string; status: string; year: number | null; description: string; tags: string[]; body: string };
   type Talk = Omit<Post, 'type'> & { type: 'talk' };
-  type Doc = Post | Talk | Book;
+  type Photo = Omit<Post, 'type'> & { type: 'photo' };
+  type Doc = Post | Talk | Book | Photo;
 
   onPage('search', (signal) => {
     const root = document.querySelector<HTMLElement>('[data-search]');
@@ -143,11 +144,11 @@ const i18n = {
       body: fold(doc.body).text,
     });
     const fetchIndex = () =>
-      shared<{ p: Promise<{ posts: Post[]; talks?: Talk[]; books: Book[] }> | null }>('search:index', () => ({ p: null }));
+      shared<{ p: Promise<{ posts: Post[]; talks?: Talk[]; books: Book[]; photos?: Photo[] }> | null }>('search:index', () => ({ p: null }));
     const load = () =>
       (loading ??= (fetchIndex().p ??= fetch('/search.json').then((r) => r.json()))
-        .then((data: { posts: Post[]; talks?: Talk[]; books: Book[] }) => {
-          entries = [...data.posts, ...(data.talks ?? []), ...data.books].map((doc) => ({ doc, f: fieldsOf(doc) }));
+        .then((data: { posts: Post[]; talks?: Talk[]; books: Book[]; photos?: Photo[] }) => {
+          entries = [...data.posts, ...(data.talks ?? []), ...data.books, ...(data.photos ?? [])].map((doc) => ({ doc, f: fieldsOf(doc) }));
         })
         .catch(() => {
           loading = null;
@@ -257,13 +258,13 @@ const i18n = {
       status.textContent = String(hits.length).padStart(2, '0');
       input.setAttribute('aria-expanded', 'true');
 
-      for (const type of ['post', 'talk', 'book'] as const) {
+      for (const type of ['post', 'talk', 'book', 'photo'] as const) {
         const group = hits.filter((h) => h.e.doc.type === type);
         if (!group.length) continue;
         const g = document.createElement('div');
         g.className = 'hit-group';
         g.setAttribute('role', 'group');
-        const label = type === 'post' ? i18n.writing : type === 'talk' ? i18n.talks : i18n.library;
+        const label = type === 'post' ? i18n.writing : type === 'talk' ? i18n.talks : type === 'book' ? i18n.library : i18n.gallery;
         g.setAttribute('aria-label', label);
         const h = document.createElement('p');
         h.className = 'hit-group__head chrome chrome--intl';
@@ -277,7 +278,10 @@ const i18n = {
           a.className = 'hit';
           a.id = `hit-${options.length}`;
           a.setAttribute('role', 'option');
-          a.href = d.type === 'book' ? `${base}/books/${d.slug}` : `${base}/${d.type === 'talk' ? 'talks' : 'writing'}/${d.slug}`;
+          a.href =
+            d.type === 'book' ? `${base}/books/${d.slug}`
+            : d.type === 'photo' ? `${base}/gallery#${d.slug}`
+            : `${base}/${d.type === 'talk' ? 'talks' : 'writing'}/${d.slug}`;
 
           const meta = document.createElement('span');
           meta.className = 'hit__meta chrome';
@@ -389,7 +393,7 @@ const i18n = {
         setActive(active - 1);
       } else if (e.key === 'Enter' && options[active]) {
         e.preventDefault();
-        navigate(options[active].href);
+        options[active].click(); // same path as a click: the router (or the gallery) takes it from here
       }
     });
 
@@ -410,6 +414,12 @@ const i18n = {
     list.addEventListener('pointermove', (e) => {
       const o = el(e.target)?.closest<HTMLAnchorElement>('.hit');
       if (o) setActive(options.indexOf(o));
+    });
+
+    // a chosen result: close first, so the page is restored before whatever
+    // the link opens (a new page, or the gallery viewer on this one)
+    list.addEventListener('click', (e) => {
+      if (el(e.target)?.closest('.hit')) close();
     });
 
     // leaving the page with search open: restore the page underneath

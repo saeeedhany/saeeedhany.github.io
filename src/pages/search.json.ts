@@ -1,6 +1,7 @@
 import { getCollection } from 'astro:content';
 import { getPosts } from '../data/posts';
 import { getTalks } from '../data/talks';
+import { getPhotos, hasStory } from '../data/gallery';
 import { slugOf } from '../data/site';
 
 /**
@@ -66,7 +67,21 @@ export async function GET() {
     body: plain(k.body),
   }));
 
-  return new Response(JSON.stringify({ posts, talks, books }), {
+  // photos with something to find: a title or a story
+  const photos = (await getPhotos())
+    .filter((p) => p.data.title || hasStory(p))
+    .map((p) => ({
+      type: 'photo' as const,
+      slug: slugOf(p.id),
+      lang: p.data.lang,
+      title: p.data.title ?? p.data.alt,
+      description: p.data.place ?? '',
+      tags: [] as string[],
+      date: p.data.date.toISOString().slice(0, 10),
+      body: plain(p.body),
+    }));
+
+  return new Response(JSON.stringify({ posts, talks, books, photos }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
 }
