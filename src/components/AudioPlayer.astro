@@ -7,7 +7,7 @@ import { COPY } from '../data/site';
 const labels = Object.fromEntries(
   (['en', 'ar'] as const).map((l) => [
     l,
-    { play: COPY[l].play, pause: COPY[l].pause, speed: COPY[l].speed, stop: COPY[l].stopAudio, back: COPY[l].back15, fwd: COPY[l].fwd15 },
+    { play: COPY[l].play, pause: COPY[l].pause, speed: COPY[l].speed, stop: COPY[l].stopAudio, back: COPY[l].back15, fwd: COPY[l].fwd15, error: COPY[l].audioError, open: COPY[l].openFile },
   ]),
 );
 ---
@@ -24,6 +24,10 @@ const labels = Object.fromEntries(
     <a class="mini__title" data-mini-title href="/"></a>
     <span class="mini__kind chrome" data-mini-kind></span>
     <span class="mini__time chrome" data-mini-time>0:00</span>
+    <!-- the host failed (down, bad link): say so and offer the file itself -->
+    <span class="mini__error" data-mini-error hidden>
+      <span data-mini-error-msg></span> <a data-mini-error-link target="_blank" rel="noopener"></a>
+    </span>
     <button type="button" class="mini__btn chrome" data-mini-a="rate">1×</button>
     <button type="button" class="mini__btn mini__stop" data-mini-a="stop">✕</button>
   </div>
@@ -32,7 +36,8 @@ const labels = Object.fromEntries(
 <script>
   import { onPage, once } from '../scripts/lifecycle';
   import { cycleRate, skip, stop, subscribe, toggle } from '../scripts/player';
-  import { formatTime, parseTrack, sameTrack } from '../scripts/audio-core';
+  import type { PlayerState } from '../scripts/player';
+  import { formatTime, parseTrack, sameTrack, type Track } from '../scripts/audio-core';
 
   const root = () => document.querySelector<HTMLElement>('[data-mini]');
   // tracks with a full player on the current page; the bar hides for these
@@ -56,22 +61,29 @@ const labels = Object.fromEntries(
       const own = pageTracks.some((t) => sameTrack(t, st.track)); // identity = file, not page
       const show = !!st.track && !own;
       bar.hidden = !show;
+      if (st.track) render(st, st.track);
+      // measured after rendering: the error line can make the bar taller
       document.documentElement.style.setProperty('--player-h', show ? `${bar.offsetHeight}px` : '0px');
-      if (!st.track) return;
+    });
+
+    function render(st: PlayerState, track: Track) {
       const title = q<HTMLAnchorElement>('[data-mini-title]');
-      title.textContent = st.track.title;
-      title.href = st.track.href;
-      title.lang = st.track.lang;
-      title.dir = st.track.lang === 'ar' ? 'rtl' : 'ltr';
-      q('[data-mini-kind]').textContent = st.track.kind === 'talk' ? 'TALK' : 'POST';
+      title.textContent = track.title;
+      title.href = track.href;
+      title.lang = track.lang;
+      title.dir = track.lang === 'ar' ? 'rtl' : 'ltr';
+      q('[data-mini-kind]').textContent = track.kind === 'talk' ? 'TALK' : 'POST';
       q('[data-mini-time]').textContent = `${formatTime(st.time)} / ${st.duration ? formatTime(st.duration) : '–:––'}`;
+      q('[data-mini-time]').hidden = st.error;
+      q('[data-mini-error]').hidden = !st.error;
+      q<HTMLAnchorElement>('[data-mini-error-link]').href = track.src;
       q<HTMLElement>('[data-mini-bar]').style.transform = `scaleX(${st.duration ? Math.min(1, st.time / st.duration) : 0})`;
       const btn = q('[data-mini-a=toggle]');
       btn.setAttribute('aria-pressed', String(st.playing));
       btn.setAttribute('aria-label', st.playing ? labels.pause : labels.play);
       q('[data-mini-a=rate]').textContent = `${st.rate}×`;
       bar.toggleAttribute('data-loading', st.loading);
-    });
+    }
   });
 
   // Per page: which language, and is this the playing track's own page?
@@ -84,6 +96,16 @@ const labels = Object.fromEntries(
     bar.querySelector('[data-mini-a=fwd]')?.setAttribute('aria-label', labels.fwd);
     bar.querySelector('[data-mini-a=rate]')?.setAttribute('aria-label', labels.speed);
     bar.querySelector('[data-mini-a=stop]')?.setAttribute('aria-label', labels.stop);
+    const msg = bar.querySelector('[data-mini-error-msg]');
+    const link = bar.querySelector('[data-mini-error-link]');
+    // prose in the page's language, so it reads in its own direction
+    const err = bar.querySelector<HTMLElement>('[data-mini-error]');
+    if (err) {
+      err.lang = document.documentElement.lang;
+      err.dir = document.documentElement.dir || 'ltr';
+    }
+    if (msg) msg.textContent = labels.error;
+    if (link) link.textContent = `${labels.open} ↗`;
     pageTracks = [...document.querySelectorAll<HTMLElement>('[data-audio-controls]')].map((el) => parseTrack(el.dataset.track));
     // re-run the bar's subscriber for this page (visibility, --player-h,
     // which the swap wiped from <html style>)

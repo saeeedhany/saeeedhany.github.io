@@ -2129,10 +2129,20 @@ html.menu-open {
 .mini__kind,
 .mini__time { flex: none; opacity: 0.7; }
 
+.mini__error {
+  flex: none;
+  font-size: var(--t-small);
+  white-space: nowrap;
+}
+.mini__error a { text-decoration: underline; text-underline-offset: 3px; }
+
 @media (max-width: 640px) {
   .mini__btn[data-mini-a='back'],
   .mini__btn[data-mini-a='fwd'],
   .mini__kind { display: none; }
+  /* no room beside the title: the error takes its own line under the controls */
+  .mini__row { flex-wrap: wrap; }
+  .mini__error { order: 10; flex-basis: 100%; white-space: normal; padding-block-end: var(--s-s); }
   .mini__row { gap: var(--s-s); }
 }
 
