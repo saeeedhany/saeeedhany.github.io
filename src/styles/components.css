@@ -2253,3 +2253,14 @@ html.menu-open {
   font-size: var(--t-subtitle);
 }
 .tile__caption:lang(ar) { font-family: var(--f-display-ar); }
+
+/* ---- colour reveal: hover / keyboard focus on pointers, screen centre on touch */
+.tile__frame > .tile__colour { transition: opacity 0.6s var(--ease); }
+@media (hover: hover) {
+  .tile:hover .tile__colour,
+  .tile:focus-visible .tile__colour { opacity: 1; }
+}
+.tile[data-lit] .tile__colour { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .tile__frame > .tile__colour { transition: none; }
+}
