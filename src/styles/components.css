@@ -2341,6 +2341,8 @@ html.menu-open {
 
 .viewer__side { inline-size: 100%; max-inline-size: 40rem; }
 .viewer__meta { opacity: 0.75; }
+/* follows the photo's language (set by the viewer), not the page's */
+.viewer__meta[dir='rtl'] { direction: rtl; }
 .viewer__title {
   margin-block: var(--s-s) var(--s-m);
   font-family: var(--f-display-la);
