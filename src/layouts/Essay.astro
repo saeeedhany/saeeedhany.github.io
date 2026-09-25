@@ -1,6 +1,7 @@
 ---
 import Base from './Base.astro';
 import Plate from '../components/Plate.astro';
+import AudioControls from '../components/AudioControls.astro';
 import { COPY, baseFor, dirFor, fmtDate, type Lang } from '../data/site';
 
 interface Props {
@@ -15,9 +16,15 @@ interface Props {
   plate?: string;
   index?: string;
   canonical?: string;
+  /** recording of this page, if any */
+  audio?: { src: string; duration?: string };
+  /** 'writing' or 'talks' — where tag links and "all" point */
+  section?: 'writing' | 'talks';
+  /** this page's own-language URL, used as the track's href */
+  href?: string;
 }
 
-const { lang, contentLang, title, date, description, tags = [], plate, index, canonical } = Astro.props;
+const { lang, contentLang, title, date, description, tags = [], plate, index, canonical, audio, section = 'writing', href } = Astro.props;
 const t = COPY[lang];
 const base = baseFor(lang);
 const cdir = dirFor(contentLang);
@@ -46,6 +53,16 @@ const cdir = dirFor(contentLang);
           <h1 class="display display--heading">{title}</h1>
           {description && <p class="read read--lead" style="opacity:.85">{description}</p>}
         </div>
+        {
+          audio && href && (
+            <div style="margin-block-start: var(--s-2xl)">
+              <AudioControls
+                lang={lang}
+                track={{ src: audio.src, duration: audio.duration, title, href, lang: contentLang, kind: section === 'talks' ? 'talk' : 'post' }}
+              />
+            </div>
+          )
+        }
 
         {
           tags.length > 0 && (
@@ -53,7 +70,7 @@ const cdir = dirFor(contentLang);
               {tags.map((tag) => (
                 <a
                   class="pill chrome chrome--info chrome--intl"
-                  href={`${base}/writing?tag=${encodeURIComponent(tag)}`}
+                  href={`${base}/${section}?tag=${encodeURIComponent(tag)}`}
                 >
                   {tag}
                 </a>
@@ -79,7 +96,7 @@ const cdir = dirFor(contentLang);
         </div>
 
         <p style="margin-block-start: var(--s-4xl)">
-          <a class="btn btn--outline" href={`${base}/writing`}>{t.readAll}</a>
+          <a class="btn btn--outline" href={`${base}/${section}`}>{section === 'talks' ? t.allTalks : t.readAll}</a>
         </p>
       </div>
     </div>

@@ -20,6 +20,8 @@ const { Content } = await render(post);
   plate={plateFor(post, rank)}
   index={number}
   canonical={postCanonical(post)}
+  audio={post.data.audio}
+  href={postCanonical(post)}
 >
   <Content />
 </Essay>

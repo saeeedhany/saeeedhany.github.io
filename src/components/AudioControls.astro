@@ -1,0 +1,100 @@
+---
+import { COPY, type Lang } from '../data/site';
+import { formatTime, parseDuration, type Track } from '../scripts/audio-core';
+
+interface Props {
+  /** site language: labels */
+  lang: Lang;
+  track: Omit<Track, 'duration'> & { duration?: string };
+}
+const { lang, track } = Astro.props;
+const t = COPY[lang];
+const seconds = parseDuration(track.duration);
+const data: Track = { ...track, duration: seconds };
+const labels = { play: t.play, pause: t.pause };
+---
+
+<!--
+  The full player on a post/talk page. A view onto the one engine
+  (src/scripts/player.ts): if this track is already playing when the page
+  opens (e.g. after Back), it shows the live state immediately.
+  The controls are a left-to-right time axis in both languages.
+-->
+<div class="player" data-audio-controls data-track={JSON.stringify(data)} data-labels={JSON.stringify(labels)}>
+  <div class="player__row" dir="ltr">
+    <button type="button" class="player__play" data-a="toggle" aria-pressed="false" aria-label={t.play}>
+      <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+      <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor" /></svg>
+    </button>
+    <button type="button" class="player__skip chrome" data-a="back" aria-label={t.back15}>−15</button>
+    <input
+      type="range"
+      class="player__seek"
+      data-a="seek"
+      min="0"
+      max={seconds ?? 0}
+      step="1"
+      value="0"
+      aria-label={t.seekLabel}
+    />
+    <button type="button" class="player__skip chrome" data-a="fwd" aria-label={t.fwd15}>+15</button>
+    <span class="player__time chrome" data-a="time">0:00 / {seconds !== undefined ? formatTime(seconds) : '–:––'}</span>
+    <button type="button" class="player__rate chrome" data-a="rate" aria-label={t.speed}>1×</button>
+  </div>
+  <p class="player__error read" data-a="error" hidden>
+    {t.audioError} <a href={track.src} target="_blank" rel="noopener">{t.openFile} ↗</a>
+  </p>
+</div>
+
+<script>
+  import { onPage } from '../scripts/lifecycle';
+  import { cycleRate, seek, skip, subscribe, toggle } from '../scripts/player';
+  import { formatTime, parseTrack, sameTrack } from '../scripts/audio-core';
+
+  onPage('audio-controls', (signal) => {
+    for (const root of document.querySelectorAll<HTMLElement>('[data-audio-controls]')) {
+      const track = parseTrack(root.dataset.track);
+      if (!track) continue;
+      const labels = JSON.parse(root.dataset.labels ?? '{}');
+      const q = (a: string) => root.querySelector<HTMLElement>(`[data-a=${a}]`)!;
+      const btn = q('toggle');
+      const range = q('seek') as HTMLInputElement;
+      const time = q('time');
+      const rate = q('rate');
+      const err = q('error');
+      let dragging = false;
+
+      btn.addEventListener('click', () => toggle(track), { signal });
+      q('back').addEventListener('click', () => skip(-15), { signal });
+      q('fwd').addEventListener('click', () => skip(15), { signal });
+      rate.addEventListener('click', () => cycleRate(), { signal });
+      range.addEventListener('input', () => (dragging = true), { signal });
+      range.addEventListener('change', () => {
+        dragging = false;
+        seek(Number(range.value));
+      }, { signal });
+      range.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? 5 : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -5 : 0;
+        if (!d) return;
+        e.preventDefault();
+        skip(d);
+      }, { signal });
+
+      const off = subscribe((st) => {
+        const mine = sameTrack(st.track, track); // identity is the file, not the page
+        const dur = (mine && st.duration) || track.duration || 0;
+        const now = mine ? st.time : 0;
+        btn.setAttribute('aria-pressed', String(mine && st.playing));
+        btn.setAttribute('aria-label', mine && st.playing ? labels.pause : labels.play);
+        root.toggleAttribute('data-loading', mine && st.loading);
+        range.max = String(Math.max(1, Math.round(dur)));
+        if (!dragging) range.value = String(Math.round(now));
+        range.setAttribute('aria-valuetext', `${formatTime(now)} / ${formatTime(dur)}`);
+        time.textContent = `${formatTime(now)} / ${dur ? formatTime(dur) : '–:––'}`;
+        rate.textContent = `${mine ? st.rate : 1}×`;
+        err.hidden = !(mine && st.error);
+      });
+      signal.addEventListener('abort', off, { once: true });
+    }
+  });
+</script>

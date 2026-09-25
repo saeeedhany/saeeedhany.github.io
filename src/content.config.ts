@@ -2,6 +2,12 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+/** A recording hosted outside the repo (see README: archive.org). */
+const audio = z.object({
+  src: z.string().url().startsWith('https://'),
+  duration: z.string().regex(/^\d{1,2}:\d{2}(:\d{2})?$/).optional(), // "14:32" or "1:02:05"
+});
+
 /**
  * One `writing` collection with `lang` as a field, rather than separate ar/en
  * collections. Keeps "latest across both languages" a single query.
@@ -19,6 +25,7 @@ const writing = defineCollection({
     description: z.string().optional(),
     plate: z.string().optional(),
     plateSource: z.string().optional(),
+    audio: audio.optional(),
     draft: z.boolean().default(false),
   }),
 });

@@ -121,6 +121,7 @@ const langs = ['en', 'ar'] as const;
               <span class="row__meta chrome">
                 #{String(writing.length - i).padStart(2, '0')}
                 <span class="lang-badge">{post.data.lang}</span>
+                {post.data.audio && <span class="lang-badge audio-badge">AUDIO</span>}
               </span>
               <span>
                 <span class="row__title" dir="auto">{post.data.title}</span>

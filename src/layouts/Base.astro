@@ -90,6 +90,10 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
 
     <!-- site-wide search over writing and books; inert until opened -->
     <Search lang={lang} />
+    <!-- The one audio element for the whole visit. transition:persist makes
+         the router move THIS node into every new page instead of replacing
+         it, so playback continues across navigation. -->
+    <audio data-audio preload="none" transition:persist="audio-el"></audio>
 
     <!-- tiled grain, replacing the reference's WebGL canvas -->
     <div class="grain" aria-hidden="true"></div>
