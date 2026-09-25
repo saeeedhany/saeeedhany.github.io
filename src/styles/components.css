@@ -1711,6 +1711,21 @@ html.menu-open {
   padding-block-end: var(--s-2xl);
 }
 
+/* the results scrollbar in the site's voice: a thin square rule in the
+   foreground colour on no track, no arrow buttons. Chromium ignores these
+   pseudo-elements once the standard properties are set, so those are only
+   the fallback for browsers without them (Firefox). */
+.search__results::-webkit-scrollbar { width: 4px; }
+.search__results::-webkit-scrollbar-button { display: none; }
+.search__results::-webkit-scrollbar-track { background: transparent; }
+.search__results::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--fg) 45%, transparent); border-radius: 0; }
+@supports not selector(::-webkit-scrollbar) {
+  .search__results {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--fg) 45%, transparent) transparent;
+  }
+}
+
 .hit-group__head {
   margin-block-end: var(--s-s);
   opacity: 0.55;
