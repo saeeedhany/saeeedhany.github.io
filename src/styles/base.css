@@ -352,8 +352,9 @@ html.lenis body {
    position: relative }` wins on equal specificity and the footer never
    becomes fixed. */
 
-/* room for the mini player, so it never covers the end of the page or the
-   footer's links (--player-h is 0px unless the bar is showing) */
-.page { padding-block-end: var(--player-h, 0px); }
+/* room for the mini player. The page needs none: the footer is revealed
+   BEHIND it, and padding the page would paint an ink band above the footer.
+   The footer lifts its own content above the bar instead
+   (--player-h is 0px unless the bar is showing). */
 .footer--reveal { padding-block-end: calc(var(--s-2xl) + var(--player-h, 0px)) !important; }
 html { scroll-padding-block-end: var(--player-h, 0px); }
