@@ -4,6 +4,7 @@ import { render } from 'astro:content';
 import { getPhotos, hasStory } from '../data/gallery';
 import { COPY, fmtDate, slugOf, type Lang } from '../data/site';
 import { placeTiles, tileHeight } from '../scripts/masonry';
+import GalleryViewer from './GalleryViewer.astro';
 
 interface Props {
   lang: Lang;
@@ -89,6 +90,7 @@ const columns = placeTiles(items.map((it) => tileHeight(it.ratio, !!it.p.data.ti
     {items.filter((it) => it.story).map(({ slug, Content }) => (
       <template data-story={slug}><Content /></template>
     ))}
+    {items.length > 0 && <GalleryViewer lang={lang} />}
   </div>
 </section>
 

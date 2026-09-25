@@ -1,0 +1,178 @@
+---
+import { COPY, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const t = COPY[Astro.props.lang];
+const chevron = 'M10 3 5 8l5 5';
+---
+
+<!--
+  One full-screen viewer per gallery page. It is moved to the end of <body> on
+  load so every other body child can be made inert while it is open (the same
+  technique as the search overlay). Content comes from the tiles' data-*
+  attributes and the <template data-story> elements; nothing here is fetched.
+-->
+<div class="viewer s-ink" data-viewer hidden role="dialog" aria-modal="true" aria-label={t.viewerLabel}>
+  <div class="viewer__bar container">
+    <span class="viewer__count chrome" data-v-count></span>
+    <div class="viewer__nav">
+      <button type="button" class="viewer__btn" data-v="prev" aria-label={t.prevPhoto}>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d={chevron} fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+      </button>
+      <button type="button" class="viewer__btn viewer__btn--next" data-v="next" aria-label={t.nextPhoto}>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d={chevron} fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+      </button>
+      <button type="button" class="viewer__btn" data-v="close" aria-label={t.closeViewer}>✕</button>
+    </div>
+  </div>
+  <div class="viewer__body container" data-v-body>
+    <div class="viewer__frame duo" data-v-frame>
+      <img class="viewer__mask" data-v-mask alt="" />
+      <img class="viewer__colour" data-v-colour alt="" />
+    </div>
+    <div class="viewer__side" data-v-side>
+      <p class="viewer__meta chrome" data-v-meta></p>
+      <h2 class="viewer__title" data-v-title></h2>
+      <div class="viewer__story prose" data-v-story></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { onPage } from '../scripts/lifecycle';
+
+  onPage('gallery:viewer', (signal) => {
+    const viewer = document.querySelector<HTMLElement>('[data-viewer]');
+    const tiles = [...document.querySelectorAll<HTMLAnchorElement>('[data-gallery] .tile')].sort(
+      (a, b) => Number(a.dataset.i) - Number(b.dataset.i),
+    );
+    if (!viewer || !tiles.length) return;
+    document.body.append(viewer);
+
+    const q = <T extends HTMLElement = HTMLElement>(s: string) => viewer.querySelector<T>(s)!;
+    const body = q('[data-v-body]');
+    const frame = q('[data-v-frame]');
+    const mask = q<HTMLImageElement>('[data-v-mask]');
+    const colour = q<HTMLImageElement>('[data-v-colour]');
+    const count = q('[data-v-count]');
+    const side = q('[data-v-side]');
+    const meta = q('[data-v-meta]');
+    const title = q('[data-v-title]');
+    const story = q('[data-v-story]');
+    const rtl = () => document.documentElement.dir === 'rtl';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    let index = -1;
+    let returnTo: HTMLElement | null = null;
+    let wasInert = new Set<HTMLElement>();
+    const others = () =>
+      [...document.body.children].filter(
+        (el): el is HTMLElement => el !== viewer && el instanceof HTMLElement && el.tagName !== 'SCRIPT',
+      );
+
+    /** Fill the viewer with photo i (wrapping). */
+    function show(i: number) {
+      index = (i + tiles.length) % tiles.length;
+      const d = tiles[index].dataset;
+      frame.removeAttribute('data-ready');
+      frame.style.setProperty('--ar', d.ratio ?? '1');
+      mask.src = d.mask ?? '';
+      colour.alt = d.alt ?? '';
+      colour.onload = () => requestAnimationFrame(() => frame.setAttribute('data-ready', ''));
+      colour.src = d.full ?? '';
+      count.textContent = `${pad(index + 1)} / ${pad(tiles.length)}`;
+      for (const el of [meta, title, story]) {
+        el.lang = d.lang ?? 'en';
+        el.dir = d.lang === 'ar' ? 'rtl' : 'ltr';
+      }
+      meta.textContent = [d.place, d.date].filter(Boolean).join(' · ');
+      title.textContent = d.title ?? '';
+      title.hidden = !d.title;
+      const tpl = document.querySelector<HTMLTemplateElement>(`template[data-story="${CSS.escape(d.photo ?? '')}"]`);
+      story.replaceChildren(...(tpl ? [tpl.content.cloneNode(true)] : []));
+      body.toggleAttribute('data-has-story', !!tpl);
+      side.hidden = !tpl && !d.title && !meta.textContent;
+      // warm the neighbours so moving feels instant
+      for (const k of [index - 1, index + 1]) {
+        const n = tiles[(k + tiles.length) % tiles.length];
+        if (n !== tiles[index]) new Image().src = n.dataset.full ?? '';
+      }
+      viewer.scrollTop = 0;
+    }
+
+    function open(i: number) {
+      if (!viewer!.hidden) return show(i);
+      returnTo = tiles[(i + tiles.length) % tiles.length];
+      show(i);
+      wasInert = new Set(others().filter((el) => el.inert));
+      viewer!.hidden = false;
+      others().forEach((el) => (el.inert = true));
+      document.dispatchEvent(new CustomEvent('site:lock'));
+      q('[data-v="close"]').focus({ preventScroll: true });
+    }
+
+    /** Close without touching history (Task 7 wraps this). */
+    function hide() {
+      if (viewer!.hidden) return;
+      viewer!.hidden = true;
+      others().forEach((el) => (el.inert = wasInert.has(el)));
+      document.dispatchEvent(new CustomEvent('site:unlock'));
+      returnTo?.focus({ preventScroll: false });
+      index = -1;
+    }
+
+    const go = (i: number) => show(i);
+    const close = () => hide();
+
+    tiles.forEach((t, i) =>
+      t.addEventListener('click', (e) => {
+        e.preventDefault();
+        open(i);
+      }, { signal }),
+    );
+    q('[data-v="close"]').addEventListener('click', () => close(), { signal });
+    q('[data-v="prev"]').addEventListener('click', () => go(index - 1), { signal });
+    q('[data-v="next"]').addEventListener('click', () => go(index + 1), { signal });
+
+    // capture: runs before the search overlay's own Escape handler, so with
+    // search open on top this does nothing and search closes alone
+    document.addEventListener('keydown', (e) => {
+      if (viewer.hidden || document.querySelector<HTMLElement>('[data-search]')?.dataset.open === 'true') return;
+      const fwd = rtl() ? 'ArrowLeft' : 'ArrowRight';
+      const back = rtl() ? 'ArrowRight' : 'ArrowLeft';
+      if (e.key === 'Escape') close();
+      else if (e.key === fwd) go(index + 1);
+      else if (e.key === back) go(index - 1);
+      else if (e.key === 'Home') go(0);
+      else if (e.key === 'End') go(tiles.length - 1);
+      else if (e.key === 'Tab') {
+        const f = [...viewer.querySelectorAll<HTMLElement>('button, a[href]')].filter((el) => el.getClientRects().length);
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) last.focus();
+        else if (!e.shiftKey && document.activeElement === last) first.focus();
+        else return;
+      } else return;
+      e.preventDefault();
+    }, { signal, capture: true });
+
+    // swipe: sideways moves, down closes (only from the top of the overlay).
+    // Touch events, not pointer events: the overlay also scrolls natively.
+    let x0 = 0, y0 = 0, top0 = 0;
+    viewer.addEventListener('touchstart', (e) => {
+      x0 = e.touches[0].clientX;
+      y0 = e.touches[0].clientY;
+      top0 = viewer.scrollTop;
+    }, { passive: true, signal });
+    viewer.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - x0;
+      const dy = e.changedTouches[0].clientY - y0;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(index + (dx < 0 ? 1 : -1) * (rtl() ? -1 : 1));
+      else if (dy > 80 && dy > Math.abs(dx) && top0 <= 0) close();
+    }, { passive: true, signal });
+
+    // leaving the page with the viewer open: release everything
+    return () => hide();
+  });
+</script>
