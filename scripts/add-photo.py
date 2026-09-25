@@ -82,8 +82,10 @@ def main() -> None:
     # the mask is made from the clean, upright copy, 800 px wide whatever the shape
     w, h = (int(n) for n in magick("identify", "-format", "%w %h", str(web)).split())
     longest = max(MASK_WIDTH, round(MASK_WIDTH * h / w))
+    # positive: dark areas take the ink, so fading to colour reveals the photo
+    # rather than inverting it (the manuscript plates use the negative on purpose)
     dither(web, assets / f"{slug}-mask.png", treatment="ordered", width=longest, square=False,
-           contrast=4.0, ink=INK, paper=PAPER, positive=False)
+           contrast=4.0, ink=INK, paper=PAPER, positive=True)
 
     lines = [
         "---",
