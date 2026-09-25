@@ -68,6 +68,18 @@ if (!reg.bound) {
   }
 }
 
+// A navigation that starts while the page curtain is still running makes the
+// router skip that view transition, and the router leaves the resulting
+// rejection unhandled. A skipped animation because the reader moved on is
+// expected, not an error: mark exactly that one handled.
+if (!reg.onceKeys.has('router:skipped')) {
+  reg.onceKeys.add('router:skipped');
+  addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    if (r instanceof DOMException && r.name === 'AbortError' && r.message === 'Transition was skipped') e.preventDefault();
+  });
+}
+
 export function onPage(key: string, setup: Setup): void {
   const known = reg.setups.has(key);
   reg.setups.set(key, setup);

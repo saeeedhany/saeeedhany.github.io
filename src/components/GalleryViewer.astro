@@ -41,6 +41,7 @@ const chevron = 'M10 3 5 8l5 5';
 </div>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
   import { onPage } from '../scripts/lifecycle';
 
   onPage('gallery:viewer', (signal) => {
@@ -122,13 +123,78 @@ const chevron = 'M10 3 5 8l5 5';
       index = -1;
     }
 
-    const go = (i: number) => show(i);
-    const close = () => hide();
+    // ---- history: /gallery#<slug> -------------------------------------------
+    const path = location.pathname;
+    const slugAt = (hash: string) => decodeURIComponent(hash.slice(1));
+    const find = (slug: string) => tiles.findIndex((t) => t.dataset.photo === slug);
+    const url = (i: number) => `${path}${location.search}#${encodeURIComponent(tiles[i].dataset.photo ?? '')}`;
+    let onEntry = false; // the current history entry shows a photo
+    let pushed = false; // …and an entry of this same page lies behind it
+
+    // The photo's entry is created by the router itself (a same-page #hash
+    // navigation), so the router remembers it: Back then stays on this page
+    // and only moves in history, instead of re-rendering the whole page.
+    function openHere(i: number) {
+      open(i);
+      if (onEntry) return void history.replaceState({ ...history.state, gallery: true }, '', url(index));
+      void navigate(url(index));
+      onEntry = pushed = true;
+    }
+    function go(i: number) {
+      show(i);
+      history.replaceState({ ...history.state, gallery: true }, '', url(index));
+    }
+    function close() {
+      hide();
+      if (!onEntry) return;
+      if (pushed) return history.back(); // popstate below finishes the job
+      history.replaceState({ ...history.state, gallery: undefined }, '', path + location.search);
+      onEntry = false;
+    }
+
+    // Back / Forward within this page: the router moves the address (it knows
+    // these entries); the viewer follows it.
+    addEventListener('popstate', () => {
+      if (location.pathname !== path) return; // leaving: the router's job
+      const i = find(slugAt(location.hash));
+      if (!onEntry && i < 0) return;
+      if (i >= 0) {
+        open(i);
+        onEntry = pushed = true;
+      } else {
+        hide();
+        onEntry = false;
+      }
+    }, { signal });
+
+    // a link to #<slug> on this page (a search result, a story): open here.
+    // Deferred a tick so an overlay that closes on the same click (search)
+    // restores the page first; the viewer then takes over.
+    document.addEventListener('click', (e) => {
+      const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href]') : null;
+      if (!a || a.closest('[data-gallery]')) return;
+      const u = new URL(a.href, location.href);
+      if (u.origin !== location.origin || u.pathname.replace(/\/$/, '') !== path.replace(/\/$/, '')) return;
+      const i = find(slugAt(u.hash));
+      if (i < 0) return;
+      // preventDefault alone: Astro's link handler skips prevented clicks, and
+      // the event must still reach the search list so search can close
+      e.preventDefault();
+      setTimeout(() => openHere(i), 0);
+    }, { capture: true, signal });
+
+    addEventListener('hashchange', () => {
+      const i = find(slugAt(location.hash));
+      if (i >= 0) {
+        open(i);
+        onEntry = pushed = true;
+      }
+    }, { signal });
 
     tiles.forEach((t, i) =>
       t.addEventListener('click', (e) => {
         e.preventDefault();
-        open(i);
+        openHere(i);
       }, { signal }),
     );
     q('[data-v="close"]').addEventListener('click', () => close(), { signal });
@@ -171,6 +237,14 @@ const chevron = 'M10 3 5 8l5 5';
       if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(index + (dx < 0 ? 1 : -1) * (rtl() ? -1 : 1));
       else if (dy > 80 && dy > Math.abs(dx) && top0 <= 0) close();
     }, { passive: true, signal });
+
+    // arriving with #<slug> (a shared link, or a search result from another page)
+    const first = find(slugAt(location.hash));
+    if (first >= 0) {
+      open(first);
+      onEntry = true;
+      pushed = false;
+    }
 
     // leaving the page with the viewer open: release everything
     return () => hide();
