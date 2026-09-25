@@ -2370,6 +2370,27 @@ html.menu-open {
 }
 .viewer__frame[data-ready] > .viewer__colour { opacity: 1; }
 
+/* moving between photos: the ink curtain, vertical (see GalleryViewer) */
+.viewer:not([hidden]) .viewer__body {
+  view-transition-name: viewer-body;
+  /* opaque, so the incoming photo covers the outgoing one as it wipes */
+  background: var(--bg);
+}
+@keyframes curtain-rise {
+  from { clip-path: inset(100% 0 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+html[data-viewer-move]::view-transition-old(root),
+html[data-viewer-move]::view-transition-new(root),
+html[data-viewer-move]::view-transition-group(viewer-body) { animation: none; }
+html[data-viewer-move]::view-transition-old(viewer-body) { animation: 0.42s linear both curtain-hold; }
+html[data-viewer-move='next']::view-transition-new(viewer-body) {
+  animation: 0.42s cubic-bezier(0.76, 0, 0.24, 1) both curtain-drop;
+}
+html[data-viewer-move='prev']::view-transition-new(viewer-body) {
+  animation: 0.42s cubic-bezier(0.76, 0, 0.24, 1) both curtain-rise;
+}
+
 .viewer__side { inline-size: 100%; max-inline-size: 40rem; }
 .viewer__meta { opacity: 0.75; }
 /* follows the photo's language (set by the viewer), not the page's */
