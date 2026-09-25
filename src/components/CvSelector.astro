@@ -60,46 +60,46 @@ const anyReady = CVS.some((c) => c.ready);
 </div>
 
 <script>
-  // Roving-tabindex tablist. ~30 lines of client JS for the whole page.
-  for (const root of document.querySelectorAll<HTMLElement>('[data-cv]')) {
-    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cv-tab]'));
-    const fileEl = root.querySelector<HTMLElement>('[data-cv-file]');
-    const getEl = root.querySelector<HTMLAnchorElement>('[data-cv-get]');
-    if (!tabs.length || !fileEl || !getEl) continue;
+  import { onPage } from '../scripts/lifecycle';
 
-    const select = (next: HTMLButtonElement) => {
-      for (const tab of tabs) {
-        const on = tab === next;
-        tab.setAttribute('aria-selected', String(on));
-        tab.tabIndex = on ? 0 : -1;
-      }
-      const file = next.dataset.file ?? '';
-      const ready = next.dataset.ready === 'true';
-      fileEl.textContent = file.replace(/^\//, '');
-      if (ready) {
-        getEl.href = file;
-        getEl.removeAttribute('aria-disabled');
-      } else {
-        getEl.removeAttribute('href');
-        getEl.setAttribute('aria-disabled', 'true');
-      }
-    };
+  // Roving-tabindex tablist.
+  onPage('cv-selector', (signal) => {
+    for (const root of document.querySelectorAll<HTMLElement>('[data-cv]')) {
+      const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cv-tab]'));
+      const fileEl = root.querySelector<HTMLElement>('[data-cv-file]');
+      const getEl = root.querySelector<HTMLAnchorElement>('[data-cv-get]');
+      if (!tabs.length || !fileEl || !getEl) continue;
 
-    tabs.forEach((tab, i) => {
-      tab.addEventListener('click', () => select(tab));
-      tab.addEventListener('keydown', (e) => {
-        // in an RTL tablist the arrow keys are visually mirrored
-        const rtl = getComputedStyle(root).direction === 'rtl';
-        const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
-        const back = rtl ? 'ArrowRight' : 'ArrowLeft';
-        let j = -1;
-        if (e.key === fwd) j = (i + 1) % tabs.length;
-        else if (e.key === back) j = (i - 1 + tabs.length) % tabs.length;
-        if (j < 0) return;
-        e.preventDefault();
-        select(tabs[j]);
-        tabs[j].focus();
+      const select = (next: HTMLButtonElement) => {
+        for (const tab of tabs) {
+          const on = tab === next;
+          tab.setAttribute('aria-selected', String(on));
+          tab.tabIndex = on ? 0 : -1;
+        }
+        const file = next.dataset.file ?? '';
+        fileEl.textContent = file.replace(/^\//, '');
+        if (next.dataset.ready === 'true') {
+          getEl.href = file;
+          getEl.removeAttribute('aria-disabled');
+        } else {
+          getEl.removeAttribute('href');
+          getEl.setAttribute('aria-disabled', 'true');
+        }
+      };
+
+      tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => select(tab), { signal });
+        tab.addEventListener('keydown', (e) => {
+          const rtl = getComputedStyle(root).direction === 'rtl';
+          const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
+          const back = rtl ? 'ArrowRight' : 'ArrowLeft';
+          const j = e.key === fwd ? (i + 1) % tabs.length : e.key === back ? (i - 1 + tabs.length) % tabs.length : -1;
+          if (j < 0) return;
+          e.preventDefault();
+          select(tabs[j]);
+          tabs[j].focus();
+        }, { signal });
       });
-    });
-  }
+    }
+  });
 </script>

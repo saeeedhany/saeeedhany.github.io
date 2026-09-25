@@ -141,10 +141,13 @@ const langs = ['en', 'ar'] as const;
 </section>
 
 <script>
+  import { onPage } from '../scripts/lifecycle';
   import { initFilters } from '../scripts/filters';
 
-  initFilters('writing', {
-    lang: (el, v) => el.dataset.lang === v,
-    tag: (el, v) => (JSON.parse(el.dataset.tags ?? '[]') as string[]).includes(v),
-  });
+  onPage('filters:writing', () =>
+    initFilters('writing', {
+      lang: (el, v) => el.dataset.lang === v,
+      tag: (el, v) => (JSON.parse(el.dataset.tags ?? '[]') as string[]).includes(v),
+    }),
+  );
 </script>

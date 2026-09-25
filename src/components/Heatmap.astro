@@ -128,6 +128,10 @@ const fmt = (n: number) => n.toLocaleString('en');
 }
 
 <script>
+  import { onPage } from '../scripts/lifecycle';
+
+  onPage('heatmap', (signal) => {
+  const observers: IntersectionObserver[] = [];
   for (const root of document.querySelectorAll<HTMLElement>('[data-heatmap]')) {
     const grid = root.querySelector<HTMLElement>('[data-hm-grid]')!;
     const tip = root.querySelector<HTMLElement>('[data-hm-tip]')!;
@@ -170,15 +174,15 @@ const fmt = (n: number) => n.toLocaleString('en');
     grid.addEventListener('pointerover', (e) => {
       const c = (e.target as HTMLElement).closest<HTMLElement>('.hm__cell');
       if (c) show(c);
-    });
-    grid.addEventListener('pointerleave', () => (active >= 0 ? show(cells[active]) : hide()));
+    }, { signal });
+    grid.addEventListener('pointerleave', () => (active >= 0 ? show(cells[active]) : hide()), { signal });
 
     // keyboard: arrows move a day (up/down) or a week (left/right)
-    grid.addEventListener('focus', () => select(active >= 0 ? active : cells.length - 1));
+    grid.addEventListener('focus', () => select(active >= 0 ? active : cells.length - 1), { signal });
     grid.addEventListener('blur', () => {
       if (active >= 0) cells[active].removeAttribute('data-active');
       hide();
-    });
+    }, { signal });
     grid.addEventListener('keydown', (e) => {
       // Arrows move relative to the selected day. If nothing is selected yet
       // (keydown can arrive without a preceding focus event), start from the
@@ -196,7 +200,7 @@ const fmt = (n: number) => n.toLocaleString('en');
         e.preventDefault();
         select(cells.length - 1);
       }
-    });
+    }, { signal });
 
     // open on the most recent weeks when the calendar is wider than the screen
     scroller.scrollLeft = scroller.scrollWidth;
@@ -216,6 +220,9 @@ const fmt = (n: number) => n.toLocaleString('en');
         { threshold: 0.3 },
       );
       io.observe(grid);
+      observers.push(io);
     }
   }
+  return () => observers.forEach((o) => o.disconnect());
+  });
 </script>

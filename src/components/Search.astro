@@ -75,12 +75,15 @@ const i18n = {
 </div>
 
 <script>
+  import { onPage, shared } from '../scripts/lifecycle';
+
   type Post = { type: 'post'; slug: string; lang: 'en' | 'ar'; title: string; description: string; tags: string[]; date: string; body: string };
   type Book = { type: 'book'; slug: string; title: string; author: string; category: string; status: string; year: number | null; description: string; tags: string[]; body: string };
   type Doc = Post | Book;
 
-  const root = document.querySelector<HTMLElement>('[data-search]');
-  if (root) {
+  onPage('search', (signal) => {
+    const root = document.querySelector<HTMLElement>('[data-search]');
+    if (!root) return;
     const input = root.querySelector<HTMLInputElement>('[data-search-input]')!;
     const status = root.querySelector<HTMLElement>('[data-search-status]')!;
     const list = root.querySelector<HTMLElement>('[data-search-results]')!;
@@ -129,23 +132,23 @@ const i18n = {
     type Entry = { doc: Doc; f: Record<string, string> };
     let entries: Entry[] | null = null;
     let loading: Promise<void> | null = null;
+    const fieldsOf = (doc: Doc): Record<string, string> => ({
+      title: fold(doc.title).text,
+      tags: fold(doc.tags.join(' ')).text,
+      meta: fold(doc.type === 'book' ? `${doc.author} ${doc.category} ${i18n.categories?.[doc.category] ?? ''}` : '').text,
+      description: fold(doc.description).text,
+      body: fold(doc.body).text,
+    });
+    const fetchIndex = () =>
+      shared<{ p: Promise<{ posts: Post[]; books: Book[] }> | null }>('search:index', () => ({ p: null }));
     const load = () =>
-      (loading ??= fetch('/search.json')
-        .then((r) => r.json())
+      (loading ??= (fetchIndex().p ??= fetch('/search.json').then((r) => r.json()))
         .then((data: { posts: Post[]; books: Book[] }) => {
-          entries = [...data.posts, ...data.books].map((doc) => ({
-            doc,
-            f: {
-              title: fold(doc.title).text,
-              tags: fold(doc.tags.join(' ')).text,
-              meta: fold(doc.type === 'book' ? `${doc.author} ${doc.category} ${i18n.categories?.[doc.category] ?? ''}` : '').text,
-              description: fold(doc.description).text,
-              body: fold(doc.body).text,
-            },
-          }));
+          entries = [...data.posts, ...data.books].map((doc) => ({ doc, f: fieldsOf(doc) }));
         })
         .catch(() => {
-          loading = null; // allow a retry on next open
+          loading = null;
+          fetchIndex().p = null; // allow a retry on next open
         }));
 
     // Every token must appear somewhere (AND). Where it appears sets the
@@ -366,11 +369,11 @@ const i18n = {
         e.preventDefault();
         open(opener);
       }
-    });
+    }, { signal });
     // warm the index as soon as intent shows, so results are instant on open
     document.addEventListener('pointerover', (e) => {
       if (el(e.target)?.closest('[data-search-open]')) load();
-    });
+    }, { signal });
     closeBtn.addEventListener('click', close);
     input.addEventListener('input', render);
 
@@ -397,7 +400,7 @@ const i18n = {
         e.preventDefault();
         open(document.activeElement as HTMLElement);
       }
-    });
+    }, { signal });
 
     // pointer movement moves the active option too, so Enter and a click
     // always agree on which result they mean
@@ -405,5 +408,10 @@ const i18n = {
       const o = el(e.target)?.closest<HTMLAnchorElement>('.hit');
       if (o) setActive(options.indexOf(o));
     });
-  }
+
+    // leaving the page with search open: restore the page underneath
+    return () => {
+      if (root.dataset.open === 'true') close();
+    };
+  });
 </script>

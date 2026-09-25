@@ -93,9 +93,8 @@ const rating = (n?: number) => (n ? '▪'.repeat(n) + '▫'.repeat(5 - n) : '—
 </section>
 
 <script>
+  import { onPage } from '../scripts/lifecycle';
   import { initFilters } from '../scripts/filters';
 
-  initFilters('books', {
-    category: (el, v) => el.dataset.category === v,
-  });
+  onPage('filters:books', () => initFilters('books', { category: (el, v) => el.dataset.category === v }));
 </script>
