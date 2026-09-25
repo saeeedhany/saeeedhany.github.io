@@ -142,8 +142,9 @@ const chevron = 'M10 3 5 8l5 5';
       void navigate(url(index));
       onEntry = pushed = true;
     }
-    // Moving between photos: the page curtain, vertical — the next photo wipes
-    // down over this one, the previous wipes up. A View Transition scoped to the
+    // Moving between photos: the page curtain, sideways — the next photo sweeps
+    // in from the right, the previous from the left (mirrored on right-to-left
+    // pages). A View Transition scoped to the
     // viewer's content (the page itself is told not to animate); a press during
     // a wipe finishes it at once and starts the next.
     const reduce = matchMedia('(prefers-reduced-motion: reduce)');
