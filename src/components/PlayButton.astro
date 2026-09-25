@@ -1,0 +1,52 @@
+---
+import { COPY, type Lang } from '../data/site';
+import { parseDuration, type Track } from '../scripts/audio-core';
+
+interface Props {
+  lang: Lang;
+  track: Omit<Track, 'duration'> & { duration?: string };
+}
+const { lang, track } = Astro.props;
+const t = COPY[lang];
+const data: Track = { ...track, duration: parseDuration(track.duration) };
+---
+
+<button
+  type="button"
+  class="rowplay"
+  data-play
+  data-track={JSON.stringify(data)}
+  data-labels={JSON.stringify({ play: t.play, pause: t.pause })}
+  aria-pressed="false"
+  aria-label={`${t.play}: ${track.title}`}
+>
+  <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+  <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor" /></svg>
+</button>
+
+<script>
+  import { onPage } from '../scripts/lifecycle';
+  import { subscribe, toggle } from '../scripts/player';
+  import { parseTrack, sameTrack } from '../scripts/audio-core';
+
+  onPage('row-play', (signal) => {
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-play]')];
+    if (!buttons.length) return;
+    const tracks = buttons.map((b) => parseTrack(b.dataset.track));
+    buttons.forEach((b, i) => {
+      b.addEventListener('click', (e) => {
+        e.preventDefault(); // the button sits inside a row that also links to the talk
+        if (tracks[i]) toggle(tracks[i]!);
+      }, { signal });
+    });
+    const off = subscribe((st) => {
+      buttons.forEach((b, i) => {
+        const on = sameTrack(tracks[i], st.track) && st.playing;
+        const l = JSON.parse(b.dataset.labels ?? '{}');
+        b.setAttribute('aria-pressed', String(on));
+        b.setAttribute('aria-label', `${on ? l.pause : l.play}: ${tracks[i]?.title ?? ''}`);
+      });
+    });
+    signal.addEventListener('abort', off, { once: true });
+  });
+</script>

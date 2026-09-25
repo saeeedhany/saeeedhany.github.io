@@ -49,4 +49,20 @@ const books = defineCollection({
   }),
 });
 
-export const collections = { writing, books };
+/** Talks: recordings, each with notes/transcript as the body (optional). */
+const talks = defineCollection({
+  // files starting with `_` (the template) are not content
+  loader: glob({ base: './src/content/talks', pattern: '**/[^_]*.{md,mdx}' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    lang: z.enum(['ar', 'en']),
+    description: z.string().optional(),
+    tags: z.array(z.string()).default([]),
+    audio, // required for talks
+    plate: z.string().optional(),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { writing, books, talks };

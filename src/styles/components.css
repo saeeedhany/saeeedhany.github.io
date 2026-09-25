@@ -2140,3 +2140,28 @@ html.menu-open {
   .mini { transition: none; }
   [data-mini][data-loading] .mini__play { animation: none; }
 }
+
+/* ============================================================================
+   TALKS LIST — a row is not one link: it holds the talk link and a play button
+   ========================================================================= */
+
+.row--talk { cursor: default; }
+.row__link { display: block; }
+.row__link:hover .row__title { text-decoration: underline; text-underline-offset: 4px; }
+.row__end { display: flex; align-items: center; gap: var(--s-m); justify-content: flex-end; }
+
+.rowplay {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  flex: none;
+  box-shadow: inset 0 0 0 var(--hair) var(--line-strong);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.rowplay:hover,
+.rowplay[aria-pressed='true'] { background: var(--fg); color: var(--bg); }
+.rowplay svg { inline-size: 13px; block-size: 13px; }
+.rowplay .i-pause,
+.rowplay[aria-pressed='true'] .i-play { display: none; }
+.rowplay[aria-pressed='true'] .i-pause { display: block; }

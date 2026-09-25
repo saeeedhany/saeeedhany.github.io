@@ -33,6 +33,7 @@ export type ThemeId = (typeof THEMES)[number]['id'];
 
 export const NAV = [
   { href: { ar: '/ar/writing', en: '/writing' }, label: { ar: 'الكتابة', en: 'Writing' } },
+  { href: { ar: '/ar/talks', en: '/talks' }, label: { ar: 'المحادثات', en: 'Talks' } },
   { href: { ar: '/ar/books', en: '/books' }, label: { ar: 'المكتبة', en: 'Library' } },
   { href: { ar: '/ar/about', en: '/about' }, label: { ar: 'عن', en: 'About' } },
 ] as const;

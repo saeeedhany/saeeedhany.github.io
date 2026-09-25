@@ -3,7 +3,8 @@ import SocialIcons from './SocialIcons.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import Burger from './Burger.astro';
 import SearchButton from './SearchButton.astro';
-import { NAV, SITE, COPY, baseFor, type Lang } from '../data/site';
+import { SITE, COPY, baseFor, type Lang } from '../data/site';
+import { getNav } from '../data/nav';
 
 interface Props {
   lang: Lang;
@@ -12,6 +13,7 @@ interface Props {
   surface?: 'ink' | 'paper';
 }
 const { lang, surface = 'ink', altHref } = Astro.props;
+const NAV = await getNav();
 const t = COPY[lang];
 const mark = SITE.mark[lang];
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';

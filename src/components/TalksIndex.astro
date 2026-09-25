@@ -1,0 +1,112 @@
+---
+import SearchButton from './SearchButton.astro';
+import PlayButton from './PlayButton.astro';
+import { getTalks, talkHref, talkCanonical } from '../data/talks';
+import { COPY, fmtDate, type Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+const talks = await getTalks();
+
+const tagCount = new Map<string, number>();
+for (const k of talks) for (const tag of k.data.tags) tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+const tags = [...tagCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag]) => tag);
+const isArabic = (s: string) => /[؀-ۿ]/.test(s);
+---
+
+<section class="band s-paper">
+  <div class="container">
+    <div class="head">
+      <div class="head__title">
+        <h1 class="display display--heading">{t.talks}</h1>
+      </div>
+      <span class="head__link chrome" style="text-decoration: none">{String(talks.length).padStart(2, '0')}</span>
+    </div>
+
+    {
+      talks.length === 0 ? (
+        <p class="read" style="opacity:.6">{t.noTalks}</p>
+      ) : (
+        <>
+          <div class="filters" data-filters="talks" hidden>
+            <SearchButton lang={lang} variant="bar" />
+            <div class="filters__group" role="group" aria-labelledby="ft-lang">
+              <span id="ft-lang" class="filters__key chrome chrome--intl">{t.filterLang}</span>
+              <div class="chips">
+                <button type="button" class="chip" data-f="lang" data-v="" aria-pressed="true">
+                  {t.all} <span class="chip__n" data-n />
+                </button>
+                {(['en', 'ar'] as const).map((l) => (
+                  <button type="button" class="chip" data-f="lang" data-v={l} aria-pressed="false" lang="en">
+                    {l} <span class="chip__n" data-n />
+                  </button>
+                ))}
+              </div>
+            </div>
+            {tags.length > 0 && (
+              <div class="filters__group" role="group" aria-labelledby="ft-tags">
+                <span id="ft-tags" class="filters__key chrome chrome--intl">{t.filterTags}</span>
+                <div class="chips">
+                  <button type="button" class="chip" data-f="tag" data-v="" aria-pressed="true">
+                    {t.all} <span class="chip__n" data-n />
+                  </button>
+                  {tags.map((tag) => (
+                    <button type="button" class="chip" data-f="tag" data-v={tag} aria-pressed="false" lang={isArabic(tag) ? 'ar' : 'en'}>
+                      {tag} <span class="chip__n" data-n />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div class="filters__foot">
+              <span class="filters__count chrome chrome--intl" aria-live="polite" data-count data-label={t.showing} />
+              <button type="button" class="filters__clear chrome chrome--intl" data-clear hidden>{t.clear}</button>
+            </div>
+          </div>
+
+          <div class="rows" data-items>
+            {talks.map((talk, i) => (
+              <div class="row row--talk" data-item lang={talk.data.lang} data-lang={talk.data.lang} data-tags={JSON.stringify(talk.data.tags)}>
+                <span class="row__meta chrome">
+                  #{String(talks.length - i).padStart(2, '0')}
+                  <span class="lang-badge">{talk.data.lang}</span>
+                </span>
+                <a class="row__link" href={talkHref(talk, lang)}>
+                  <span class="row__title" dir="auto">{talk.data.title}</span>
+                  {talk.data.description && (
+                    <span class="read" dir="auto" style="display:block; margin-block-start: var(--s-s); opacity:.8">
+                      {talk.data.description}
+                    </span>
+                  )}
+                </a>
+                <span class="row__end">
+                  <span class="row__meta chrome">{talk.data.audio.duration ?? ''} · {fmtDate(talk.data.date)}</span>
+                  <PlayButton
+                    lang={lang}
+                    track={{ src: talk.data.audio.src, duration: talk.data.audio.duration, title: talk.data.title, href: talkCanonical(talk), lang: talk.data.lang, kind: 'talk' }}
+                  />
+                </span>
+              </div>
+            ))}
+          </div>
+          <p class="filters__empty read" data-empty hidden>{t.nothingMatches}</p>
+        </>
+      )
+    }
+  </div>
+</section>
+
+<script>
+  import { onPage } from '../scripts/lifecycle';
+  import { initFilters } from '../scripts/filters';
+
+  onPage('filters:talks', () =>
+    initFilters('talks', {
+      lang: (el, v) => el.dataset.lang === v,
+      tag: (el, v) => (JSON.parse(el.dataset.tags ?? '[]') as string[]).includes(v),
+    }),
+  );
+</script>

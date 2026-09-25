@@ -1,0 +1,28 @@
+---
+import { render } from 'astro:content';
+import Essay from '../../layouts/Essay.astro';
+import { talkPaths, talkPlate, talkCanonical } from '../../data/talks';
+
+// Every talk, English chrome. Its Arabic-chrome twin is /ar/talks/[...id].
+export const getStaticPaths = talkPaths;
+
+const { talk, rank, number } = Astro.props;
+const { Content } = await render(talk);
+---
+
+<Essay
+  lang="en"
+  contentLang={talk.data.lang}
+  title={talk.data.title}
+  date={talk.data.date}
+  description={talk.data.description}
+  tags={[...talk.data.tags]}
+  plate={talkPlate(talk, rank)}
+  index={number}
+  canonical={talkCanonical(talk)}
+  audio={talk.data.audio}
+  section="talks"
+  href={talkCanonical(talk)}
+>
+  <Content />
+</Essay>

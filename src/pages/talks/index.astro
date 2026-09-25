@@ -1,0 +1,8 @@
+---
+import Base from '../../layouts/Base.astro';
+import TalksIndex from '../../components/TalksIndex.astro';
+import { COPY } from '../../data/site';
+---
+<Base lang="en" title={COPY.en.talks} navSurface="paper">
+  <TalksIndex lang="en" />
+</Base>
