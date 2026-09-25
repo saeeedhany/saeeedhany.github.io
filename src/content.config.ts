@@ -1,10 +1,11 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { isAudioSrc } from './scripts/audio-core';
 
-/** A recording hosted outside the repo (see README: archive.org). */
+/** A recording: an https:// link to a host (see README), or a file in public/audio/. */
 const audio = z.object({
-  src: z.string().url().startsWith('https://'),
+  src: z.string().refine(isAudioSrc, 'audio src must be an https:// link or a site path like /audio/x.mp3'),
   duration: z.string().regex(/^\d{1,2}:\d{2}(:\d{2})?$/).optional(), // "14:32" or "1:02:05"
 });
 

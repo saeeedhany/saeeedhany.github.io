@@ -46,12 +46,16 @@ export function sameTrack(a?: { src: string } | null, b?: { src: string } | null
   return !!a && !!b && a.src === b.src;
 }
 
+/** Where a recording may live: an https:// host, or a path on this site
+ *  ("/audio/x.mp3"). Never plain http, another site via "//", or a relative path. */
+export const isAudioSrc = (s: string) => /^https:\/\//.test(s) || /^\/(?!\/)/.test(s);
+
 export function parseTrack(json: string | null | undefined): Track | null {
   if (!json) return null;
   try {
     const t = JSON.parse(json);
     const ok =
-      typeof t?.src === 'string' && t.src.startsWith('https://') &&
+      typeof t?.src === 'string' && isAudioSrc(t.src) &&
       typeof t.title === 'string' && typeof t.href === 'string' &&
       (t.lang === 'en' || t.lang === 'ar') && (t.kind === 'post' || t.kind === 'talk') &&
       (t.duration === undefined || typeof t.duration === 'number');
