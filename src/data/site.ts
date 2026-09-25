@@ -35,6 +35,7 @@ export const NAV = [
   { href: { ar: '/ar/writing', en: '/writing' }, label: { ar: 'الكتابة', en: 'Writing' } },
   { href: { ar: '/ar/talks', en: '/talks' }, label: { ar: 'المحادثات', en: 'Talks' } },
   { href: { ar: '/ar/books', en: '/books' }, label: { ar: 'المكتبة', en: 'Library' } },
+  { href: { ar: '/ar/gallery', en: '/gallery' }, label: { ar: 'المعرض', en: 'Gallery' } },
   { href: { ar: '/ar/about', en: '/about' }, label: { ar: 'عن', en: 'About' } },
 ] as const;
 
@@ -134,6 +135,13 @@ export const COPY = {
     talks: 'المحادثات',
     allTalks: 'كل المحادثات',
     noTalks: 'لا توجد محادثات بعد.',
+    gallery: 'المعرض',
+    noPhotos: 'لا توجد صور بعد.',
+    photoStory: 'لها قصة',
+    viewerLabel: 'عارض الصور',
+    prevPhoto: 'الصورة السابقة',
+    nextPhoto: 'الصورة التالية',
+    closeViewer: 'إغلاق',
   },
   en: {
     dir: 'ltr',
@@ -199,6 +207,13 @@ export const COPY = {
     talks: 'Talks',
     allTalks: 'All talks',
     noTalks: 'No talks yet.',
+    gallery: 'Gallery',
+    noPhotos: 'No photos yet.',
+    photoStory: 'Has a story',
+    viewerLabel: 'Photo viewer',
+    prevPhoto: 'Previous photo',
+    nextPhoto: 'Next photo',
+    closeViewer: 'Close',
   },
 } as const;
 

@@ -16,6 +16,7 @@ Never overwrites an existing .md. Requires ImageMagick 7 (`magick`).
 """
 import argparse, datetime, json, pathlib, re, subprocess, sys
 
+sys.dont_write_bytecode = True  # no __pycache__ next to the scripts
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from dither import INK, PAPER, run as dither  # noqa: E402
 

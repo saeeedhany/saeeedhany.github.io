@@ -66,4 +66,24 @@ const talks = defineCollection({
   }),
 });
 
-export const collections = { writing, books, talks };
+/**
+ * Gallery: one note file per photo (see scripts/add-photo.py). The body, if
+ * any, is the photo's story.
+ */
+const gallery = defineCollection({
+  loader: glob({ base: './src/content/gallery', pattern: '**/[^_]*.md' }),
+  schema: ({ image }) =>
+    z.object({
+      image: image(),
+      mask: image(),
+      // what a screen reader says; the script's placeholder fails the build
+      alt: z.string().min(1).refine((s) => s !== 'TODO', 'write the alt text for this photo'),
+      date: z.coerce.date(),
+      title: z.string().optional(),
+      place: z.string().optional(),
+      lang: z.enum(['ar', 'en']).default('en'), // language of the title and story
+      draft: z.boolean().default(false),
+    }),
+});
+
+export const collections = { writing, books, talks, gallery };

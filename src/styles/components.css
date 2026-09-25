@@ -2175,3 +2175,81 @@ html.menu-open {
 .rowplay .i-pause,
 .rowplay[aria-pressed='true'] .i-play { display: none; }
 .rowplay[aria-pressed='true'] .i-pause { display: block; }
+
+/* ============================================================================
+   GALLERY — masonry of dithered photos (colour reveal: see below)
+   Newest first ACROSS the columns: placement is computed (masonry.ts), so the
+   columns are real elements. Under 1024px without the 2-column layout, the
+   columns flatten and `order` restores newest-first in one column.
+   ========================================================================= */
+
+.gallery {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-l);
+}
+.gallery__col {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-l);
+}
+@media (max-width: 1023px) {
+  .gallery:not([data-cols='2']) { flex-direction: column; align-items: stretch; }
+  .gallery:not([data-cols='2']) .gallery__col { display: contents; }
+  .gallery:not([data-cols='2']) .tile { order: var(--i); }
+}
+@media (max-width: 639px) {
+  .gallery { flex-direction: column; align-items: stretch; }
+  .gallery .gallery__col { display: contents; }
+  .gallery .tile { order: var(--i); }
+}
+
+.tile {
+  position: relative;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.tile:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+
+.tile__frame {
+  position: relative;
+  display: block;
+}
+.tile__frame > img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+/* the colour photo sits above the ink layer (.duo::before is z 1) and must
+   not inherit the mask's multiply blend */
+.tile__frame > .tile__colour {
+  z-index: 2;
+  mix-blend-mode: normal;
+  opacity: 0;
+}
+
+.tile__mark {
+  position: absolute;
+  inset-block-start: var(--s-s);
+  inset-inline-end: var(--s-s);
+  z-index: 3;
+  display: inline-grid;
+  place-items: center;
+  inline-size: 26px;
+  block-size: 26px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.tile__caption {
+  display: block;
+  margin-block-start: var(--s-s);
+  font-family: var(--f-display-la);
+  font-size: var(--t-subtitle);
+}
+.tile__caption:lang(ar) { font-family: var(--f-display-ar); }

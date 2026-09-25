@@ -1,0 +1,123 @@
+---
+import { Image, getImage } from 'astro:assets';
+import { render } from 'astro:content';
+import { getPhotos, hasStory } from '../data/gallery';
+import { COPY, fmtDate, slugOf, type Lang } from '../data/site';
+import { placeTiles, tileHeight } from '../scripts/masonry';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = COPY[lang];
+
+const photos = await getPhotos();
+const items = await Promise.all(
+  photos.map(async (p, i) => {
+    const { width, height } = p.data.image;
+    // the viewer's large copy; also the tile's no-JS link target
+    const big = await getImage({ src: p.data.image, width: Math.min(2000, width), format: 'webp' });
+    // the mask at its own size, lossless: resampling or lossy encoding ruins a dither
+    const mask = await getImage({ src: p.data.mask, width: p.data.mask.width, format: 'png' });
+    const { Content } = await render(p);
+    return { p, i, slug: slugOf(p.id), ratio: width / height, big: big.src, mask: mask.src, story: hasStory(p), Content };
+  }),
+);
+// build-time layout for 3 columns; the browser re-places only for 2
+const columns = placeTiles(items.map((it) => tileHeight(it.ratio, !!it.p.data.title)), 3);
+---
+
+<section class="band s-paper">
+  <div class="container">
+    <div class="head">
+      <div class="head__title">
+        <h1 class="display display--heading">{t.gallery}</h1>
+      </div>
+      <span class="head__link chrome" style="text-decoration: none">{String(items.length).padStart(2, '0')}</span>
+    </div>
+
+    {
+      items.length === 0 ? (
+        <p class="read" style="opacity:.6">{t.noPhotos}</p>
+      ) : (
+        <div class="gallery" data-gallery data-cols="3">
+          {columns.map((col) => (
+            <div class="gallery__col">
+              {col.map((k) => {
+                const { p, i, slug, ratio, big, mask, story } = items[k];
+                const { title, place, alt, date } = p.data;
+                return (
+                  <a
+                    class="tile"
+                    href={big}
+                    data-photo={slug}
+                    data-i={i}
+                    data-ratio={ratio}
+                    data-captioned={title ? 'true' : undefined}
+                    data-full={big}
+                    data-mask={mask}
+                    data-alt={alt}
+                    data-title={title}
+                    data-place={place}
+                    data-date={fmtDate(date)}
+                    data-lang={p.data.lang}
+                    style={`--i: ${i}`}
+                    aria-label={`${title ?? alt}${story ? ` — ${t.photoStory}` : ''}`}
+                  >
+                    <span class="tile__frame duo" style={`aspect-ratio: ${p.data.image.width} / ${p.data.image.height}`}>
+                      <img class="tile__mask" src={mask} alt="" width={p.data.mask.width} height={p.data.mask.height} loading="lazy" decoding="async" />
+                      <Image
+                        class="tile__colour"
+                        src={p.data.image}
+                        widths={[480, 800, 1200]}
+                        sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+                        alt={alt}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </span>
+                    {story && <span class="tile__mark chrome" aria-hidden="true">✎</span>}
+                    {title && <span class="tile__caption" lang={p.data.lang} dir={p.data.lang === 'ar' ? 'rtl' : 'ltr'}>{title}</span>}
+                  </a>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )
+    }
+    {items.filter((it) => it.story).map(({ slug, Content }) => (
+      <template data-story={slug}><Content /></template>
+    ))}
+  </div>
+</section>
+
+<script>
+  import { onPage } from '../scripts/lifecycle';
+  import { placeTiles, tileHeight } from '../scripts/masonry';
+
+  // 3 columns come from the build; tablets get 2 here; phones flatten in CSS.
+  onPage('gallery:layout', (signal) => {
+    const grid = document.querySelector<HTMLElement>('[data-gallery]');
+    if (!grid) return;
+    const cols = [...grid.querySelectorAll<HTMLElement>('.gallery__col')];
+    const tiles = [...grid.querySelectorAll<HTMLElement>('.tile')].sort((a, b) => Number(a.dataset.i) - Number(b.dataset.i));
+    const wide = matchMedia('(min-width: 1024px)');
+    const mid = matchMedia('(min-width: 640px)');
+    const layout = () => {
+      const n = wide.matches ? 3 : mid.matches ? 2 : 1;
+      grid.dataset.cols = String(n);
+      cols.forEach((c, k) => (c.hidden = n > 1 && k >= n));
+      if (n === 1) return; // CSS flattens to one ordered column
+      const plan = placeTiles(tiles.map((t) => tileHeight(Number(t.dataset.ratio), t.dataset.captioned === 'true')), n);
+      plan.forEach((idx, c) => {
+        const want = idx.map((i) => tiles[i]);
+        const have = [...cols[c].children];
+        if (want.length !== have.length || want.some((el, k) => el !== have[k])) cols[c].append(...want);
+      });
+    };
+    wide.addEventListener('change', layout, { signal });
+    mid.addEventListener('change', layout, { signal });
+    layout();
+  });
+</script>
