@@ -1924,3 +1924,52 @@ html.menu-open {
     animation: none;
   }
 }
+
+/* ============================================================================
+   PAGE TRANSITION — the ink curtain
+   The new page drops in over the old one with the same motion as the menu.
+   Unlayered on purpose: Astro's own view-transition rules live in
+   `@layer astro`, and unlayered CSS always wins over layered.
+   ========================================================================= */
+
+@keyframes curtain-drop {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes curtain-hold {
+  from, to { opacity: 1; }
+}
+
+::view-transition-old(root) {
+  animation: 0.42s linear both curtain-hold;
+}
+::view-transition-new(root) {
+  animation: 0.42s cubic-bezier(0.76, 0, 0.24, 1) both curtain-drop;
+}
+
+/* the frame, grain and mini player stay still instead of being wiped */
+.frame { view-transition-name: frame; }
+.grain { view-transition-name: grain; }
+::view-transition-group(frame),
+::view-transition-group(grain),
+::view-transition-group(player) {
+  animation: none;
+}
+::view-transition-old(frame),
+::view-transition-old(grain),
+::view-transition-old(player) {
+  display: none;
+}
+::view-transition-new(frame),
+::view-transition-new(grain),
+::view-transition-new(player) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
