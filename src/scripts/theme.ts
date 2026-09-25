@@ -45,3 +45,16 @@ onPage('theme', () => {
 });
 
 export { savedTheme };
+
+// The swap wipes <html data-theme>. Re-apply before the new page paints; the
+// inline <head> script doesn't re-run (identical head elements are kept).
+once('theme:swap', () => {
+  document.addEventListener('astro:after-swap', () => {
+    const id = savedTheme();
+    const ink = id ? document.querySelector<HTMLElement>(`[data-theme-set="${id}"]`)?.dataset.ink : undefined;
+    if (!id || !ink) return;
+    root.dataset.theme = id;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', ink);
+    // theme-ready is re-added by onPage('theme') after the new page paints
+  });
+});

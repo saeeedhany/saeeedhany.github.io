@@ -10,6 +10,7 @@ import StickyNav from '../components/StickyNav.astro';
 import Footer from '../components/Footer.astro';
 import Menu from '../components/Menu.astro';
 import Search from '../components/Search.astro';
+import { ClientRouter } from 'astro:transitions';
 import { COPY, SITE, THEMES, switchLangPath, type Lang } from '../data/site';
 
 interface Props {
@@ -39,6 +40,10 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- in-page navigation, so the audio player survives page changes.
+         fallback="swap": browsers without the View Transitions API get an
+         instant swap instead of Astro's simulated animation. -->
+    <ClientRouter fallback="swap" />
     <title>{fullTitle}</title>
     {description && <meta name="description" content={description} />}
     <meta name="color-scheme" content="only light" />

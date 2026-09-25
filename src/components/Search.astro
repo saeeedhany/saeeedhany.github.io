@@ -75,6 +75,7 @@ const i18n = {
 </div>
 
 <script>
+  import { navigate } from 'astro:transitions/client';
   import { onPage, shared } from '../scripts/lifecycle';
 
   type Post = { type: 'post'; slug: string; lang: 'en' | 'ar'; title: string; description: string; tags: string[]; date: string; body: string };
@@ -386,7 +387,7 @@ const i18n = {
         setActive(active - 1);
       } else if (e.key === 'Enter' && options[active]) {
         e.preventDefault();
-        location.href = options[active].href;
+        navigate(options[active].href);
       }
     });
 

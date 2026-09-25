@@ -1,5 +1,5 @@
 import Lenis from 'lenis';
-import { onPage, shared } from './lifecycle';
+import { onPage, once, shared } from './lifecycle';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -99,4 +99,17 @@ onPage('scroll', (signal) => {
 
   addEventListener('resize', update, { passive: true, signal });
   update();
+});
+
+// The swap wipes Lenis's classes on <html> and the router sets the scroll
+// position itself (top, or the restored one on Back). Sync Lenis to both.
+once('scroll:swap', () => {
+  document.addEventListener('astro:after-swap', () => {
+    const lenis = getLenis();
+    if (!lenis) return;
+    lenis.updateClassName();
+    lenis.start(); // never carry a menu/search lock into the next page
+    lenis.resize();
+    lenis.scrollTo(scrollY, { immediate: true, force: true });
+  });
 });
