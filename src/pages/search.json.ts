@@ -1,5 +1,6 @@
 import { getCollection } from 'astro:content';
 import { getPosts } from '../data/posts';
+import { getTalks } from '../data/talks';
 import { slugOf } from '../data/site';
 
 /**
@@ -54,7 +55,18 @@ export async function GET() {
     body: plain(b.body),
   }));
 
-  return new Response(JSON.stringify({ posts, books }), {
+  const talks = (await getTalks()).map((k) => ({
+    type: 'talk' as const,
+    slug: slugOf(k.id),
+    lang: k.data.lang,
+    title: k.data.title,
+    description: k.data.description ?? '',
+    tags: k.data.tags,
+    date: k.data.date.toISOString().slice(0, 10),
+    body: plain(k.body),
+  }));
+
+  return new Response(JSON.stringify({ posts, talks, books }), {
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
 }

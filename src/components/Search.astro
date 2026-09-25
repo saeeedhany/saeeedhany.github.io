@@ -14,6 +14,7 @@ const books = (await getCollection('books', (e) => !e.data.draft)).length;
 // labels the client script needs; everything else is rendered here
 const i18n = {
   writing: t.writing,
+  talks: t.talks,
   library: t.library,
   none: t.searchNone,
   hint: t.searchHint(posts, books),
@@ -80,7 +81,8 @@ const i18n = {
 
   type Post = { type: 'post'; slug: string; lang: 'en' | 'ar'; title: string; description: string; tags: string[]; date: string; body: string };
   type Book = { type: 'book'; slug: string; title: string; author: string; category: string; status: string; year: number | null; description: string; tags: string[]; body: string };
-  type Doc = Post | Book;
+  type Talk = Omit<Post, 'type'> & { type: 'talk' };
+  type Doc = Post | Talk | Book;
 
   onPage('search', (signal) => {
     const root = document.querySelector<HTMLElement>('[data-search]');
@@ -141,11 +143,11 @@ const i18n = {
       body: fold(doc.body).text,
     });
     const fetchIndex = () =>
-      shared<{ p: Promise<{ posts: Post[]; books: Book[] }> | null }>('search:index', () => ({ p: null }));
+      shared<{ p: Promise<{ posts: Post[]; talks?: Talk[]; books: Book[] }> | null }>('search:index', () => ({ p: null }));
     const load = () =>
       (loading ??= (fetchIndex().p ??= fetch('/search.json').then((r) => r.json()))
-        .then((data: { posts: Post[]; books: Book[] }) => {
-          entries = [...data.posts, ...data.books].map((doc) => ({ doc, f: fieldsOf(doc) }));
+        .then((data: { posts: Post[]; talks?: Talk[]; books: Book[] }) => {
+          entries = [...data.posts, ...(data.talks ?? []), ...data.books].map((doc) => ({ doc, f: fieldsOf(doc) }));
         })
         .catch(() => {
           loading = null;
@@ -210,7 +212,7 @@ const i18n = {
     }
 
     const langOf = (d: Doc): 'ar' | 'en' =>
-      d.type === 'post' ? d.lang : /[\u0600-\u06FF]/.test(d.title) ? 'ar' : 'en';
+      d.type === 'book' ? (/[\u0600-\u06FF]/.test(d.title) ? 'ar' : 'en') : d.lang;
 
     let active = -1;
     let options: HTMLAnchorElement[] = [];
@@ -255,13 +257,13 @@ const i18n = {
       status.textContent = String(hits.length).padStart(2, '0');
       input.setAttribute('aria-expanded', 'true');
 
-      for (const type of ['post', 'book'] as const) {
+      for (const type of ['post', 'talk', 'book'] as const) {
         const group = hits.filter((h) => h.e.doc.type === type);
         if (!group.length) continue;
         const g = document.createElement('div');
         g.className = 'hit-group';
         g.setAttribute('role', 'group');
-        const label = type === 'post' ? i18n.writing : i18n.library;
+        const label = type === 'post' ? i18n.writing : type === 'talk' ? i18n.talks : i18n.library;
         g.setAttribute('aria-label', label);
         const h = document.createElement('p');
         h.className = 'hit-group__head chrome chrome--intl';
@@ -275,11 +277,11 @@ const i18n = {
           a.className = 'hit';
           a.id = `hit-${options.length}`;
           a.setAttribute('role', 'option');
-          a.href = d.type === 'post' ? `${base}/writing/${d.slug}` : `${base}/books/${d.slug}`;
+          a.href = d.type === 'book' ? `${base}/books/${d.slug}` : `${base}/${d.type === 'talk' ? 'talks' : 'writing'}/${d.slug}`;
 
           const meta = document.createElement('span');
           meta.className = 'hit__meta chrome';
-          if (d.type === 'post') {
+          if (d.type !== 'book') {
             const badge = document.createElement('span');
             badge.className = 'lang-badge';
             badge.textContent = d.lang;
