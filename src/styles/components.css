@@ -2376,27 +2376,35 @@ html.menu-open {
   /* opaque, so the incoming photo covers the outgoing one as it wipes */
   background: var(--bg);
 }
-/* the incoming photo sweeps in from one side; which side follows the
-   reading direction, so "next" always comes from where the eye is heading */
-@keyframes curtain-from-right {
-  from { clip-path: inset(0 0 0 100%); }
-  to { clip-path: inset(0 0 0 0); }
+.viewer__frame[data-dropping] > .viewer__colour { transition-duration: 0.2s; }
+
+/* the dither sweep: the incoming photo (still in its dither) is revealed
+   through a mask whose edge is itself an ordered dither (public/textures),
+   sliding toward the arrow pressed. Old and new are both ink-on-paper, so the
+   whole move is drawn in the current theme's ink. */
+@keyframes sweep-right {
+  from { mask-position: 100% 0; }
+  to { mask-position: 0% 0; }
 }
-@keyframes curtain-from-left {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 0 0 0); }
+@keyframes sweep-left {
+  from { mask-position: 0% 0; }
+  to { mask-position: 100% 0; }
 }
 html[data-viewer-move]::view-transition-old(root),
 html[data-viewer-move]::view-transition-new(root),
 html[data-viewer-move]::view-transition-group(viewer-body) { animation: none; }
-html[data-viewer-move]::view-transition-old(viewer-body) { animation: 0.42s linear both curtain-hold; }
-html[data-viewer-move='next']::view-transition-new(viewer-body),
-html[dir='rtl'][data-viewer-move='prev']::view-transition-new(viewer-body) {
-  animation: 0.42s cubic-bezier(0.76, 0, 0.24, 1) both curtain-from-right;
+html[data-viewer-move]::view-transition-old(viewer-body) { animation: 0.6s linear both curtain-hold; }
+html[data-viewer-move]::view-transition-new(viewer-body) {
+  mask-size: 220% 100%;
+  mask-repeat: no-repeat;
 }
-html[data-viewer-move='prev']::view-transition-new(viewer-body),
-html[dir='rtl'][data-viewer-move='next']::view-transition-new(viewer-body) {
-  animation: 0.42s cubic-bezier(0.76, 0, 0.24, 1) both curtain-from-left;
+html[data-viewer-move='right']::view-transition-new(viewer-body) {
+  mask-image: url('/textures/sweep-right.png');
+  animation: 0.6s cubic-bezier(0.76, 0, 0.24, 1) both sweep-right;
+}
+html[data-viewer-move='left']::view-transition-new(viewer-body) {
+  mask-image: url('/textures/sweep-left.png');
+  animation: 0.6s cubic-bezier(0.76, 0, 0.24, 1) both sweep-left;
 }
 
 .viewer__side { inline-size: 100%; max-inline-size: 40rem; }

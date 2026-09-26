@@ -65,6 +65,11 @@ const chevron = 'M10 3 5 8l5 5';
     const rtl = () => document.documentElement.dir === 'rtl';
     const pad = (n: number) => String(n).padStart(2, '0');
     let index = -1;
+    // colour is held back while a sweep runs, then fades up once it lands
+    let holdColour = false;
+    const revealColour = () => {
+      if (!holdColour) requestAnimationFrame(() => frame.setAttribute('data-ready', ''));
+    };
     let returnTo: HTMLElement | null = null;
     let wasInert = new Set<HTMLElement>();
     const others = () =>
@@ -80,7 +85,7 @@ const chevron = 'M10 3 5 8l5 5';
       frame.style.setProperty('--ar', d.ratio ?? '1');
       mask.src = d.mask ?? '';
       colour.alt = d.alt ?? '';
-      colour.onload = () => requestAnimationFrame(() => frame.setAttribute('data-ready', ''));
+      colour.onload = revealColour;
       colour.src = d.full ?? '';
       count.textContent = `${pad(index + 1)} / ${pad(tiles.length)}`;
       for (const el of [meta, title, story]) {
@@ -142,19 +147,20 @@ const chevron = 'M10 3 5 8l5 5';
       void navigate(url(index));
       onEntry = pushed = true;
     }
-    // Moving between photos: the page curtain, sideways — the next photo sweeps
-    // in from the right, the previous from the left (mirrored on right-to-left
-    // pages). A View Transition scoped to the
-    // viewer's content (the page itself is told not to animate); a press during
-    // a wipe finishes it at once and starts the next.
+    // Moving between photos: a dither sweep in the theme ink. The photo drops
+    // into its dither, a dithered edge sweeps toward the arrow pressed (or with
+    // the finger), and the new photo fades up to colour once it has landed.
+    // A View Transition scoped to the viewer's content (the page itself is told
+    // not to animate); a press mid-move finishes the sweep at once.
+    type Dir = 'left' | 'right';
     const reduce = matchMedia('(prefers-reduced-motion: reduce)');
     let moving: ViewTransition | null = null;
-    // where the viewer is heading: a move is applied a frame later (inside the
+    // where the viewer is heading: a move is applied later (inside the
     // transition), so quick presses must count from the target, not `index`
     let pending: number | null = null;
     const at = () => pending ?? index;
-    function go(i: number) {
-      const from = at();
+    let dropTimer = 0;
+    function go(i: number, dir: Dir) {
       pending = (i + tiles.length) % tiles.length;
       const step = () => {
         show(i);
@@ -162,17 +168,31 @@ const chevron = 'M10 3 5 8l5 5';
         history.replaceState({ ...history.state, gallery: true }, '', url(index));
       };
       if (!document.startViewTransition || reduce.matches || viewer!.hidden) return step();
-      moving?.skipTransition();
       const root = document.documentElement;
-      root.dataset.viewerMove = i > from ? 'next' : 'prev';
-      const t = document.startViewTransition(step);
-      moving = t;
-      const done = () => {
-        if (moving !== t) return;
-        moving = null;
-        delete root.dataset.viewerMove;
+      const sweep = () => {
+        moving?.skipTransition();
+        root.dataset.viewerMove = dir;
+        holdColour = true;
+        const t = document.startViewTransition(step);
+        moving = t;
+        const done = () => {
+          if (moving !== t) return;
+          moving = null;
+          delete root.dataset.viewerMove;
+          holdColour = false;
+          if (colour.complete && colour.naturalWidth) revealColour();
+        };
+        t.finished.then(done, done);
       };
-      t.finished.then(done, done);
+      clearTimeout(dropTimer);
+      // already in dither (mid-move, or colour not loaded yet): sweep now
+      if (moving || !frame.hasAttribute('data-ready')) return sweep();
+      frame.setAttribute('data-dropping', '');
+      frame.removeAttribute('data-ready');
+      dropTimer = window.setTimeout(() => {
+        frame.removeAttribute('data-dropping');
+        sweep();
+      }, 200);
     }
     function close() {
       hide();
@@ -228,20 +248,19 @@ const chevron = 'M10 3 5 8l5 5';
       }, { signal }),
     );
     q('[data-v="close"]').addEventListener('click', () => close(), { signal });
-    q('[data-v="prev"]').addEventListener('click', () => go(at() - 1), { signal });
-    q('[data-v="next"]').addEventListener('click', () => go(at() + 1), { signal });
+    // the buttons sit (and point) the other way round on right-to-left pages
+    q('[data-v="prev"]').addEventListener('click', () => go(at() - 1, rtl() ? 'right' : 'left'), { signal });
+    q('[data-v="next"]').addEventListener('click', () => go(at() + 1, rtl() ? 'left' : 'right'), { signal });
 
     // capture: runs before the search overlay's own Escape handler, so with
     // search open on top this does nothing and search closes alone
     document.addEventListener('keydown', (e) => {
       if (viewer.hidden || document.querySelector<HTMLElement>('[data-search]')?.dataset.open === 'true') return;
-      const fwd = rtl() ? 'ArrowLeft' : 'ArrowRight';
-      const back = rtl() ? 'ArrowRight' : 'ArrowLeft';
       if (e.key === 'Escape') close();
-      else if (e.key === fwd) go(at() + 1);
-      else if (e.key === back) go(at() - 1);
-      else if (e.key === 'Home') go(0);
-      else if (e.key === 'End') go(tiles.length - 1);
+      else if (e.key === 'ArrowRight') go(at() + (rtl() ? -1 : 1), 'right');
+      else if (e.key === 'ArrowLeft') go(at() + (rtl() ? 1 : -1), 'left');
+      else if (e.key === 'Home') go(0, rtl() ? 'right' : 'left');
+      else if (e.key === 'End') go(tiles.length - 1, rtl() ? 'left' : 'right');
       else if (e.key === 'Tab') {
         const f = [...viewer.querySelectorAll<HTMLElement>('button, a[href]')].filter((el) => el.getClientRects().length);
         const first = f[0];
@@ -264,7 +283,7 @@ const chevron = 'M10 3 5 8l5 5';
     viewer.addEventListener('touchend', (e) => {
       const dx = e.changedTouches[0].clientX - x0;
       const dy = e.changedTouches[0].clientY - y0;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(at() + (dx < 0 ? 1 : -1) * (rtl() ? -1 : 1));
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(at() + (dx < 0 ? 1 : -1) * (rtl() ? -1 : 1), dx < 0 ? 'left' : 'right');
       else if (dy > 80 && dy > Math.abs(dx) && top0 <= 0) close();
     }, { passive: true, signal });
 
