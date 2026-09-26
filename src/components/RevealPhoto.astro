@@ -1,0 +1,45 @@
+---
+import { Image, getImage } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  /** the photo in colour */
+  image: ImageMetadata;
+  /** its two-tone dither (scripts/dither.py, positive) */
+  mask: ImageMetadata;
+  alt: string;
+  /** CSS aspect ratio of the frame, e.g. "4 / 5" */
+  ratio: string;
+  sizes: string;
+  /** above the fold: load at once */
+  eager?: boolean;
+}
+const { image, mask, alt, ratio, sizes, eager = false } = Astro.props;
+// the mask at its own size, lossless: resampling or lossy encoding ruins a dither
+const m = await getImage({ src: mask, width: mask.width, format: 'png' });
+---
+
+<!--
+  A photo in the site's dither (coloured live in the theme ink) that turns to
+  its real colours on hover, keyboard focus, or at screen centre on touch
+  (scripts/reveal.ts) — the same mechanism as the gallery tiles.
+  Parallax (.px) drifts both layers together.
+-->
+<figure class="px reveal" data-reveal style="margin: 0">
+  <div class="plate duo tile__frame" style={`aspect-ratio: ${ratio}`}>
+    <img class="tile__mask" src={m.src} alt="" width={mask.width} height={mask.height} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+    <Image
+      class="tile__colour"
+      src={image}
+      widths={[480, 800, 1024]}
+      sizes={sizes}
+      alt={alt}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+    />
+  </div>
+</figure>
+
+<script>
+  import '../scripts/reveal';
+</script>

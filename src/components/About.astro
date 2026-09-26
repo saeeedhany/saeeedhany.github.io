@@ -1,5 +1,4 @@
 ---
-import Plate from './Plate.astro';
 import Heatmap from './Heatmap.astro';
 import { SITE, EPIGRAPH, COPY, type Lang } from '../data/site';
 
@@ -31,6 +30,9 @@ const body = {
     contactHeading: 'Contact',
   },
 }[lang];
+import RevealPhoto from './RevealPhoto.astro';
+import portrait from '../assets/about/portrait.jpg';
+import portraitMask from '../assets/about/portrait-mask.png';
 ---
 
 <section class="band s-ink">
@@ -59,11 +61,11 @@ const body = {
         </blockquote>
       </div>
 
-      <Plate
-        name="portrait"
-        lang={lang}
-        shape="portrait"
-        credit={false}
+      <RevealPhoto
+        image={portrait}
+        mask={portraitMask}
+        ratio="4 / 5"
+        sizes="(min-width: 1024px) 40vw, 100vw"
         eager={true}
         alt={lang === 'ar' ? 'سعيد هاني' : 'Saeed Hany'}
       />

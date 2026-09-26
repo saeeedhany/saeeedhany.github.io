@@ -2289,9 +2289,11 @@ html.menu-open {
 .tile__frame > .tile__colour { transition: opacity 0.6s var(--ease); }
 @media (hover: hover) {
   .tile:hover .tile__colour,
-  .tile:focus-visible .tile__colour { opacity: 1; }
+  .tile:focus-visible .tile__colour,
+  .reveal:hover .tile__colour { opacity: 1; }
 }
-.tile[data-lit] .tile__colour { opacity: 1; }
+.tile[data-lit] .tile__colour,
+.reveal[data-lit] .tile__colour { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .tile__frame > .tile__colour { transition: none; }
 }

@@ -51,6 +51,7 @@ const columns = placeTiles(items.map((it) => tileHeight(it.ratio, !!it.p.data.ti
                   <a
                     class="tile"
                     href={big}
+                    data-reveal
                     data-photo={slug}
                     data-i={i}
                     data-ratio={ratio}
@@ -123,17 +124,5 @@ const columns = placeTiles(items.map((it) => tileHeight(it.ratio, !!it.p.data.ti
     layout();
   });
 
-  // Touch screens have no hover: the tile crossing the middle of the screen
-  // shows its real colours instead.
-  onPage('gallery:lit', () => {
-    if (!matchMedia('(hover: none)').matches) return;
-    const tiles = document.querySelectorAll<HTMLElement>('[data-gallery] .tile');
-    if (!tiles.length) return;
-    const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => e.target.toggleAttribute('data-lit', e.isIntersecting)),
-      { rootMargin: '-45% 0px -45% 0px' },
-    );
-    tiles.forEach((t) => io.observe(t));
-    return () => io.disconnect();
-  });
+  import '../scripts/reveal';
 </script>
