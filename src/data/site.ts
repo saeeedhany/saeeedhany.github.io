@@ -8,7 +8,7 @@ export const SITE = {
   // Real accounts, taken from the previous site's layout.
   social: [
     { id: 'github', label: 'GitHub', href: 'https://github.com/saeeedhany', glyph: 'gh' },
-    { id: 'x', label: 'X', href: 'https://x.com/S8eed_', glyph: 'x' },
+    { id: 'x', label: 'X', href: 'https://x.com/saeeedhany', glyph: 'x' },
     { id: 'reddit', label: 'Reddit', href: 'https://www.reddit.com/user/s_saeed_1/', glyph: 'r/' },
   ],
   /** GitHub account whose public contribution calendar is shown on About */
