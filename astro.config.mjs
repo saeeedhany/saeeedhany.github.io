@@ -33,7 +33,7 @@ const hastDuoImages = defineHastPlugin({
 });
 
 export default defineConfig({
-  site: 'https://saeeedhany.github.io',
+  site: 'https://saeed.cool',
   markdown: {
     processor: satteri({
       hastPlugins: [hastDuoImages],

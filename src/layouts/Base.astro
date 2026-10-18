@@ -20,17 +20,23 @@ interface Props {
   description?: string;
   /** surface of the first band, so the nav can invert to match */
   navSurface?: 'ink' | 'paper';
-  /** absolute path to prefer in search results, when this page is a copy */
+  /** path to use as the canonical when this route duplicates another */
   canonical?: string;
-  /** false when the other-language page is the same text in different chrome
-   *  (posts), so it must not be announced as a translation */
+  /** false when the other-language route has the same content in different chrome */
   translated?: boolean;
+  ogType?: 'website' | 'article';
 }
 
-const { lang, title, description, navSurface = 'ink', canonical, translated = true } = Astro.props;
-// the same page in the other language — the switch never drops you on home
+const { lang, title, description, navSurface = 'ink', canonical, translated = true, ogType = 'website' } = Astro.props;
+// The same page in the other language — the switch never drops you on home.
 const altHref = switchLangPath(Astro.url.pathname, lang);
-const siteUrl = Astro.site ?? 'https://saeeedhany.github.io';
+const siteUrl = Astro.site ?? 'https://saeed.cool';
+const normalizePath = (path: string) => path === '/' || path.endsWith('/') ? path : `${path}/`;
+const currentPath = normalizePath(Astro.url.pathname);
+const alternatePath = normalizePath(altHref);
+const canonicalUrl = new URL(canonical ?? currentPath, siteUrl);
+const englishUrl = new URL(lang === 'en' ? currentPath : alternatePath, siteUrl);
+const arabicUrl = new URL(lang === 'ar' ? currentPath : alternatePath, siteUrl);
 const t = COPY[lang];
 const fullTitle = title ? `${title} — ${SITE.name[lang]}` : SITE.name[lang];
 const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
@@ -58,11 +64,22 @@ const inks = Object.fromEntries(THEMES.map((th) => [th.id, th.ink]));
         }
       } catch (e) {}
     </script>
-    <link rel="canonical" href={new URL(canonical ?? Astro.url.pathname, siteUrl)} />
-    {translated && <link rel="alternate" hreflang={lang === 'ar' ? 'en' : 'ar'} href={new URL(altHref, siteUrl)} />}
+    <link rel="canonical" href={canonicalUrl.href} />
+    {translated && (
+      <>
+        <link rel="alternate" hreflang="en" href={englishUrl.href} />
+        <link rel="alternate" hreflang="ar" href={arabicUrl.href} />
+        <link rel="alternate" hreflang="x-default" href={englishUrl.href} />
+      </>
+    )}
+    <meta property="og:site_name" content={SITE.name[lang]} />
     <meta property="og:title" content={fullTitle} />
     {description && <meta property="og:description" content={description} />}
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonicalUrl.href} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    {description && <meta name="twitter:description" content={description} />}
   </head>
 
   <body>

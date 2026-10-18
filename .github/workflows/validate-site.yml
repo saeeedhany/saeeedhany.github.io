@@ -1,0 +1,54 @@
+name: Validate site
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'astro.config.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - '.github/workflows/validate-site.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Validate generated SEO files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          sitemap = Path("dist/sitemap.xml")
+          robots = Path("dist/robots.txt")
+          assert sitemap.is_file(), "dist/sitemap.xml was not generated"
+          assert robots.is_file(), "dist/robots.txt was not copied to the build"
+          root = ET.parse(sitemap).getroot()
+          namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+          urls = [node.text for node in root.findall("sm:url/sm:loc", namespace)]
+          assert urls, "sitemap has no URLs"
+          assert all(url.startswith("https://saeed.cool/") for url in urls), "sitemap contains a non-canonical host"
+          assert "https://saeed.cool/" in urls, "homepage missing from sitemap"
+          assert "https://saeed.cool/sitemap.xml" in robots.read_text(), "robots.txt does not reference the sitemap"
+          print(f"Validated {len(urls)} canonical sitemap URLs and robots.txt")
+          PY
+
+      - run: python3 scripts/check-links.py
