@@ -21,7 +21,7 @@ const b = entry.data;
 const rating = b.rating ? '▪'.repeat(b.rating) + '▫'.repeat(5 - b.rating) : null;
 ---
 
-<Base lang={lang} title={b.title} description={b.description} navSurface="ink">
+<Base lang={lang} title={b.title} description={b.description} navSurface="ink" translated={false}>
   <article>
     <header class="band band--tight s-ink">
       <div class="container">
