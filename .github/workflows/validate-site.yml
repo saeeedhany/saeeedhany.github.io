@@ -1,0 +1,33 @@
+name: Validate site
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'astro.config.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - '.github/workflows/validate-site.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: python3 scripts/check-links.py
