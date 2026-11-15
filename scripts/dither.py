@@ -68,8 +68,6 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OLD_SITE = pathlib.Path.home() / "gits/websites/saeeed/public"
 
-# In-post images referenced by the migrated markdown. Rebuilt with
-# --post-images; a raw photograph in a post would break the two-colour rule.
 POST_IMAGES = [
     ("images/desk/laptop.jpg", "images/desk", "laptop"),
     ("images/desk/New.jpg", "images/desk", "New"),
@@ -80,7 +78,6 @@ POST_IMAGES = [
 INK = "#7900f2"
 PAPER = "#f2f2f2"
 TREATMENTS = ("ordered", "halftone", "scanline")
-
 
 def build_args(src, dest, treatment, width, square, contrast, ink, paper,
                positive, aspect=None, gravity="center", bake=False):
@@ -107,13 +104,11 @@ def build_args(src, dest, treatment, width, square, contrast, ink, paper,
             "-extent", f"{width}x{width}",
         ]
     else:
-        # ">" means only shrink, never upscale a small source
         pre += ["-resize", f"{width}x{width}>"]
 
     if treatment == "halftone":
         mid = ["-ordered-dither", "h8x8a"]
     elif treatment == "scanline":
-        # squeeze vertically, dither, stretch back -> horizontal line texture
         mid = ["-resize", "100%x25%!", "-ordered-dither", "o4x4", "-resize", "100%x400%!"]
     else:
         mid = ["-ordered-dither", "o8x8"]
@@ -124,7 +119,6 @@ def build_args(src, dest, treatment, width, square, contrast, ink, paper,
     # and an -opaque swap on a Gray-colorspace image silently collapses the hue
     # to its luminance, which produces a grey image.
     if not bake:
-        # the site's mask: black = ink, white = paper
         ink, paper = "black", "white"
     lo, hi = (ink, paper) if positive else (paper, ink)
     if bake:
@@ -137,7 +131,6 @@ def build_args(src, dest, treatment, width, square, contrast, ink, paper,
                 "-threshold", "50%", "-type", "bilevel", f"PNG:{dest}"]
     return pre + mid + post
 
-
 def run(src, dest, **kw):
     dest.parent.mkdir(parents=True, exist_ok=True)
     args = build_args(src, dest, **kw)
@@ -145,7 +138,6 @@ def run(src, dest, **kw):
     if proc.returncode != 0:
         sys.exit(f"magick failed:\n{proc.stderr.decode()[:400]}")
     return dest
-
 
 def main():
     if not shutil.which("magick"):
@@ -221,7 +213,6 @@ def main():
     print(f"  reference it as /{a.dir.strip('/')}/{name}.png")
     if a.dir.strip("/") == "plates":
         print(f"  or in a component:  <Plate name=\"{name}\" lang={{lang}} />")
-
 
 if __name__ == "__main__":
     main()

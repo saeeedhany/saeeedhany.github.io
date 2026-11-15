@@ -1,7 +1,3 @@
-/* ============================================================================
-   BASE — reset, the frame, the grain, selection
-   ========================================================================= */
-
 *,
 *::before,
 *::after {
@@ -17,7 +13,6 @@
 
 * {
   margin: 0;
-  /* zero radius. everywhere. the one exception is the CV tab end-caps. */
   border-radius: 0;
 }
 
@@ -84,13 +79,6 @@ ol {
   outline-offset: 2px;
 }
 
-/* ============================================================================
-   THE FRAME
-   A fixed border in the brand hue, drawn over everything. The single most
-   recognizable structural detail of the reference: light bands appear matted
-   inside an ink border. Content scrolls beneath it.
-   ========================================================================= */
-
 .frame {
   position: fixed;
   inset: 0;
@@ -103,7 +91,6 @@ ol {
   position: relative;
   z-index: 2;
   padding: var(--frame) var(--frame) 0;
-  /* centred column with ink edges on wide screens */
   max-inline-size: var(--shell);
   margin-inline: auto;
 }
@@ -116,13 +103,6 @@ ol {
     padding: 0;
   }
 }
-
-/* ============================================================================
-   GRAIN
-   The reference runs a WebGL2 canvas at 2% opacity over the whole viewport.
-   A tiled noise image is visually indistinguishable at that strength and costs
-   no shader, no context, no main-thread work.
-   ========================================================================= */
 
 .grain {
   position: fixed;
@@ -140,10 +120,6 @@ ol {
     display: none;
   }
 }
-
-/* ============================================================================
-   LAYOUT PRIMITIVES
-   ========================================================================= */
 
 .container {
   inline-size: 100%;
@@ -163,19 +139,11 @@ ol {
   padding-block: calc(var(--band) * 0.6);
 }
 
-/* hairline rule */
-.rule {
-  block-size: 0;
-  box-shadow: 0 var(--hair) 0 0 var(--line);
-  border: 0;
-}
-
 /* an inset hairline box — never a border, so it can't shift layout */
 .boxed {
   box-shadow: inset 0 0 0 var(--hair) var(--line-strong);
 }
 
-/* screen-reader only */
 .sr {
   position: absolute;
   inline-size: 1px;
@@ -225,7 +193,6 @@ ol {
   mix-blend-mode: lighten;
 }
 
-/* images inside markdown prose, wrapped by the rehype plugin in astro.config */
 .duo--inline {
   display: block;
   position: relative;
@@ -236,15 +203,10 @@ ol {
   block-size: auto;
 }
 
-/* ============================================================================
-   PLATE — a dithered manuscript image with its noise layer and credit
-   ========================================================================= */
-
 .plate {
   position: relative;
 }
 
-/* noise sits above the ink layer (z 1) */
 .plate::after {
   z-index: 2;
   content: '';
@@ -278,12 +240,6 @@ ol {
   margin-block-start: var(--s-s);
   opacity: 0.55;
 }
-
-/* ============================================================================
-   PARALLAX
-   Scroll position is written into custom properties by JS; CSS consumes them.
-   Images are pre-scaled so drift never reveals an edge.
-   ========================================================================= */
 
 .px {
   --py: 0px;
@@ -325,15 +281,6 @@ html.lenis body {
   overflow: clip;
 }
 
-/* ============================================================================
-   FOOTER REVEAL
-   The footer is fixed behind the page; the page reserves a gap of exactly the
-   footer's height at its end. Scrolling into that gap slides the content up
-   off the footer and uncovers it, while --footer-progress fades and unblurs
-   it. This is the reference's mechanism: a reserved margin plus a blur driven
-   by a scroll-derived custom property.
-   ========================================================================= */
-
 :root {
   --footer-h: clamp(340px, 56vh, 560px);
 }
@@ -356,5 +303,9 @@ html.lenis body {
    BEHIND it, and padding the page would paint an ink band above the footer.
    The footer lifts its own content above the bar instead
    (--player-h is 0px unless the bar is showing). */
-.footer--reveal { padding-block-end: calc(var(--s-2xl) + var(--player-h, 0px)) !important; }
-html { scroll-padding-block-end: var(--player-h, 0px); }
+.footer--reveal {
+  padding-block-end: calc(var(--s-2xl) + var(--player-h, 0px)) !important;
+}
+html {
+  scroll-padding-block-end: var(--player-h, 0px);
+}

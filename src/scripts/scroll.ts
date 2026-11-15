@@ -3,7 +3,6 @@ import { onPage, once, shared } from './lifecycle';
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
-/** One Lenis for the whole visit. null under reduced motion. */
 export const getLenis = (): Lenis | null =>
   shared('lenis', () => {
     if (reduce.matches) return null;
@@ -13,7 +12,6 @@ export const getLenis = (): Lenis | null =>
       duration: 1.05,
       easing: (x: number) => 1 - Math.pow(1 - x, 3),
       smoothWheel: true,
-      // touch devices already have momentum scrolling
       syncTouch: false,
     });
     const raf = (time: number) => {
@@ -26,8 +24,6 @@ export const getLenis = (): Lenis | null =>
 
 getLenis();
 
-// ---- scroll-driven custom properties, per page ------------------------------
-// JS writes numbers into CSS variables; CSS owns every visual decision.
 onPage('scroll', (signal) => {
   const root = document.documentElement;
   const plates = Array.from(document.querySelectorAll<HTMLElement>('.px'));
@@ -66,7 +62,7 @@ onPage('scroll', (signal) => {
   };
 
   if (lenis) {
-    const off = lenis.on('scroll', update); // drive off Lenis's loop
+    const off = lenis.on('scroll', update);
     signal.addEventListener('abort', off, { once: true });
     // in-page anchors must go through Lenis or they jump
     for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) {

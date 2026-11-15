@@ -3,16 +3,12 @@ import { SITE } from '../data/site';
 
 interface Props {
   class?: string;
-  /** rendered icon size in px */
   size?: number;
-  /** remove from the tab order (for copies that duplicate an accessible set) */
   tabbable?: boolean;
 }
 
 const { class: extra = '', size = 15, tabbable = true } = Astro.props;
 
-// Brand marks, filled with currentColor so they take the surface's ink or
-// paper. GitHub is the 16-unit octicon; X and Reddit are on a 24-unit grid.
 const ICONS: Record<string, { box: number; d: string }> = {
   github: {
     box: 16,
@@ -30,31 +26,29 @@ const ICONS: Record<string, { box: number; d: string }> = {
 ---
 
 <ul class={`socials ${extra}`.trim()}>
-  {
-    SITE.social.map((s) => {
-      const icon = ICONS[s.id];
-      return (
-        <li>
-          <a
-            class="socials__link"
-            href={s.href}
-            target="_blank"
-            rel="me noopener"
-            aria-label={s.label}
-            tabindex={tabbable ? undefined : -1}
+  {SITE.social.map((s) => {
+    const icon = ICONS[s.id];
+    return (
+      <li>
+        <a
+          class="socials__link"
+          href={s.href}
+          target="_blank"
+          rel="me noopener"
+          aria-label={s.label}
+          tabindex={tabbable ? undefined : -1}
+        >
+          <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${icon.box} ${icon.box}`}
+            fill="currentColor"
+            aria-hidden="true"
           >
-            <svg
-              width={size}
-              height={size}
-              viewBox={`0 0 ${icon.box} ${icon.box}`}
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path d={icon.d} />
-            </svg>
-          </a>
-        </li>
-      );
-    })
-  }
+            <path d={icon.d} />
+          </svg>
+        </a>
+      </li>
+    );
+  })}
 </ul>

@@ -2,16 +2,13 @@ export type Lang = 'ar' | 'en';
 
 export const SITE = {
   name: { ar: 'سعيد هاني', en: 'Saeed Hany' },
-  /** two-line wordmark, as in the reference's centred HERMES / AGENT */
   mark: { ar: ['سعيد', 'هاني'], en: ['SAEED', 'HANY'] },
   email: 'alsaeedalbasi0ny@gmail.com',
-  // Real accounts, taken from the previous site's layout.
   social: [
     { id: 'github', label: 'GitHub', href: 'https://github.com/saeeedhany', glyph: 'gh' },
     { id: 'x', label: 'X', href: 'https://x.com/saeeedhany', glyph: 'x' },
     { id: 'reddit', label: 'Reddit', href: 'https://www.reddit.com/user/s_saeed_1/', glyph: 'r/' },
   ],
-  /** GitHub account whose public contribution calendar is shown on About */
   github: 'saeeedhany',
 } as const;
 
@@ -29,28 +26,24 @@ export const THEMES = [
   { id: 'malachite', ink: '#006935', name: { en: 'Malachite', ar: 'دهنج' } },
 ] as const;
 
-export type ThemeId = (typeof THEMES)[number]['id'];
+export type Section = 'writing' | 'talks' | 'books' | 'gallery' | 'about';
 
-export const NAV = [
-  { href: { ar: '/ar/writing', en: '/writing' }, label: { ar: 'الكتابة', en: 'Writing' } },
-  { href: { ar: '/ar/talks', en: '/talks' }, label: { ar: 'المحادثات', en: 'Talks' } },
-  { href: { ar: '/ar/books', en: '/books' }, label: { ar: 'المكتبة', en: 'Library' } },
-  { href: { ar: '/ar/gallery', en: '/gallery' }, label: { ar: 'المعرض', en: 'Gallery' } },
-  { href: { ar: '/ar/about', en: '/about' }, label: { ar: 'عن', en: 'About' } },
-] as const;
+export const NAV: { section: Section; label: Record<Lang, string> }[] = [
+  { section: 'writing', label: { ar: 'الكتابة', en: 'Writing' } },
+  { section: 'talks', label: { ar: 'المحادثات', en: 'Talks' } },
+  { section: 'books', label: { ar: 'المكتبة', en: 'Library' } },
+  { section: 'gallery', label: { ar: 'المعرض', en: 'Gallery' } },
+  { section: 'about', label: { ar: 'عن', en: 'About' } },
+];
 
-/**
- * The CV selector — the reference's three-tab OS switcher, doing real work.
- * The PDFs do not exist yet; `ready: false` renders the row in a disabled
- * state with a note rather than shipping a dead link.
- */
+export const PLATE_POOL = ['fixed-stars', 'pharmacy', 'astrolabe', 'optics', 'anatomy', 'elephant-clock'];
+
 export const CVS = [
   { id: 'frontend', name: { ar: 'واجهات', en: 'Frontend' }, file: '/cv/saeed-frontend.pdf', ready: false },
   { id: 'seo', name: { ar: 'SEO', en: 'SEO' }, file: '/cv/saeed-seo.pdf', ready: false },
   { id: 'kernel', name: { ar: 'أنظمة', en: 'Kernel' }, file: '/cv/saeed-kernel.pdf', ready: false },
 ] as const;
 
-/** The thesis, stated in someone else's words. Band 4. */
 export const EPIGRAPH = {
   ar: {
     text:
@@ -89,7 +82,6 @@ export const COPY = {
     allBooks: 'كل الكتب',
     backHome: 'الرئيسية',
     otherLang: 'EN',
-    otherLangHref: '/',
     notFound: 'لا يوجد شيء هنا',
     notFoundLead: 'الصفحة التي تبحث عنها غير موجودة.',
     categories: {
@@ -116,7 +108,6 @@ export const COPY = {
     searchTalks: 'ابحث في المحادثات',
     searchHint: (posts: number, books: number) => `${posts} كتابة و${books} كتب`,
     searchNone: 'لا نتائج لـ',
-    searchResults: (n: number) => `${n} نتيجة`,
     filterLang: 'اللغة',
     filterTags: 'الوسوم',
     filterCategory: 'التصنيف',
@@ -125,7 +116,6 @@ export const COPY = {
     moreTags: (n: number) => `+${n}`,
     fewerTags: 'أقل',
     nothingMatches: 'لا شيء يطابق هذه التصفية.',
-    listen: 'استمع',
     play: 'تشغيل',
     pause: 'إيقاف مؤقت',
     back15: 'رجوع ١٥ ثانية',
@@ -164,7 +154,6 @@ export const COPY = {
     allBooks: 'All books',
     backHome: 'Home',
     otherLang: 'AR',
-    otherLangHref: '/ar',
     notFound: 'Nothing here',
     notFoundLead: "The page you're looking for doesn't exist.",
     categories: {
@@ -191,7 +180,6 @@ export const COPY = {
     searchTalks: 'Search talks',
     searchHint: (posts: number, books: number) => `${posts} posts and ${books} books`,
     searchNone: 'Nothing matches',
-    searchResults: (n: number) => `${n} result${n === 1 ? '' : 's'}`,
     filterLang: 'Language',
     filterTags: 'Tags',
     filterCategory: 'Category',
@@ -200,7 +188,6 @@ export const COPY = {
     moreTags: (n: number) => `+${n}`,
     fewerTags: 'Fewer',
     nothingMatches: 'Nothing matches this filter.',
-    listen: 'Listen',
     play: 'Play',
     pause: 'Pause',
     back15: 'Back 15 seconds',
@@ -223,7 +210,6 @@ export const COPY = {
   },
 } as const;
 
-/** Metadata is always Latin, so dates are always formatted ISO-ish. */
 export function fmtDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -235,6 +221,10 @@ export function fmtDate(d: Date): string {
 export function baseFor(lang: Lang): string {
   return lang === 'en' ? '' : '/ar';
 }
+
+export const homeHref = (lang: Lang) => `${baseFor(lang)}/`;
+
+export const sectionHref = (lang: Lang, section: Section) => `${baseFor(lang)}/${section}/`;
 
 /**
  * Content ids carry the folder they were filed under — `ar/the-last-of-us`,
@@ -255,16 +245,10 @@ export function dirFor(lang: Lang): 'rtl' | 'ltr' {
   return lang === 'ar' ? 'rtl' : 'ltr';
 }
 
-/**
- * The same page in the other language. Every route exists under both
- * prefixes — including posts, whose CHROME follows the site language while
- * their text keeps its own — so switching language never throws the reader
- * back to the home page. Only the English-only 404 falls back to home.
- */
 export function switchLangPath(pathname: string, lang: Lang): string {
-  const path = pathname.replace(/\/index\.html$/, '/');
-  if (/^\/(ar\/)?404/.test(path)) return lang === 'en' ? '/ar' : '/';
-  if (lang === 'en') return path === '/' ? '/ar' : `/ar${path}`;
+  const path = pathname.replace(/\/index\.html$/, '/').replace(/([^/])$/, '$1/');
+  if (/^\/(ar\/)?404/.test(path)) return lang === 'en' ? '/ar/' : '/';
+  if (lang === 'en') return `/ar${path}`;
   const stripped = path.replace(/^\/ar(?=\/|$)/, '');
   return stripped === '' ? '/' : stripped;
 }

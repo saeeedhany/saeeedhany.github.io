@@ -1,0 +1,211 @@
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 95; /* above the sticky bar (90), under the frame (100) and grain (101) */
+  overflow: hidden;
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition:
+    clip-path 0.55s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s linear 0.55s;
+}
+
+.menu[data-open='true'] {
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition:
+    clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s;
+}
+
+.menu__plate {
+  position: absolute;
+  inset: 0;
+  opacity: 0.14;
+  transform: scale(1.06);
+  transition: transform 1.2s cubic-bezier(0.2, 0, 0, 1);
+}
+.menu[data-open='true'] .menu__plate {
+  transform: scale(1);
+}
+.menu__plate img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.menu__body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  padding-block: var(--s-l) var(--s-2xl);
+  overflow-y: auto;
+}
+
+.menu__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  padding-block: var(--s-xs);
+}
+
+.menu__mark {
+  font-family: var(--f-display);
+  font-size: var(--t-title);
+  font-weight: 500;
+  line-height: var(--mark-lh, 0.92);
+  text-transform: uppercase;
+}
+[dir='rtl'] .menu__mark {
+  --mark-lh: 1.15;
+  font-size: calc(var(--t-title) * 0.82);
+}
+
+.menu__close {
+  display: inline-flex;
+}
+
+.menu__x > span:nth-child(1) {
+  inset-block-start: 3px;
+}
+.menu__x > span:nth-child(2) {
+  inset-block-end: 3px;
+}
+
+/* shared by the menu and the search overlay, which reuses this close control */
+.menu[data-open='true'] .menu__x > span,
+.search[data-open='true'] .menu__x > span {
+  transition-delay: 0.35s;
+}
+.menu[data-open='true'] .menu__x > span:nth-child(1),
+.search[data-open='true'] .menu__x > span:nth-child(1) {
+  transform: translateY(3.75px) rotate(45deg);
+}
+.menu[data-open='true'] .menu__x > span:nth-child(2),
+.search[data-open='true'] .menu__x > span:nth-child(2) {
+  transform: translateY(-3.75px) rotate(-45deg);
+}
+
+.menu__nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding-block: var(--s-3xl);
+}
+
+.menu__list {
+  inline-size: 100%;
+}
+
+.menu__item {
+  box-shadow: inset 0 calc(-1 * var(--hair)) 0 0 var(--line);
+}
+
+.menu__link {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-l);
+  padding-block: var(--s-m);
+}
+
+.menu__index {
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+
+.menu__mask {
+  display: block;
+  overflow: hidden;
+  /* room for Arabic ascenders/descenders so the mask doesn't clip them */
+  padding-block: 0.08em;
+}
+
+.menu__label {
+  display: block;
+  font-size: clamp(2.75rem, 12vw, 5rem);
+  line-height: 1;
+  transform: translateY(110%);
+  transition: transform 0.3s cubic-bezier(0.76, 0, 0.24, 1);
+}
+[dir='rtl'] .menu__label {
+  line-height: 1.35;
+}
+
+.menu__link:hover .menu__label,
+.menu__link[aria-current] .menu__label {
+  color: var(--accent);
+}
+
+.menu[data-open='true'] .menu__label {
+  transform: translateY(0);
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition-delay: calc(0.28s + var(--i) * 0.07s);
+}
+.menu[data-open='true'] .menu__index {
+  opacity: 0.6;
+  transition-delay: calc(0.4s + var(--i) * 0.07s);
+}
+
+.menu__foot {
+  display: grid;
+  gap: var(--s-l);
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+.menu[data-open='true'] .menu__foot {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s var(--ease) calc(0.3s + var(--i) * 0.07s),
+    transform 0.6s var(--ease) calc(0.3s + var(--i) * 0.07s);
+}
+
+.menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  flex-wrap: wrap;
+}
+
+.menu__key {
+  opacity: 0.6;
+}
+
+.menu__email {
+  opacity: 0.7;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 961px) {
+  .menu {
+    display: none;
+  }
+}
+
+html.menu-open {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .menu[data-open='true'],
+  .menu__plate,
+  .menu__label,
+  .menu[data-open='true'] .menu__label,
+  .menu__index,
+  .menu__foot,
+  .menu[data-open='true'] .menu__foot,
+  .burger__lines > span,
+  .menu__x > span {
+    transition: none !important;
+    transition-delay: 0s !important;
+  }
+}

@@ -24,10 +24,8 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 WEB_EDGE = 2400
 MASK_WIDTH = 800
 
-
 def slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "photo"
-
 
 def magick(*args: str) -> str:
     p = subprocess.run(["magick", *args], capture_output=True, text=True)
@@ -35,17 +33,14 @@ def magick(*args: str) -> str:
         sys.exit(f"magick failed: {p.stderr[:400]}")
     return p.stdout
 
-
 def exif_date(src: pathlib.Path) -> str | None:
     raw = magick("identify", "-format", "%[EXIF:DateTimeOriginal]", f"{src}[0]").strip()
     m = re.match(r"(\d{4}):(\d{2}):(\d{2})", raw)
     return f"{m[1]}-{m[2]}-{m[3]}" if m else None
 
-
 def q(s: str) -> str:
     """A YAML double-quoted string (JSON strings are valid YAML)."""
     return json.dumps(s, ensure_ascii=False)
-
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Add a photo to the gallery.")
@@ -79,7 +74,6 @@ def main() -> None:
         web.unlink()
         sys.exit(f"metadata survived stripping, refusing to continue:\n{left[:300]}")
 
-    # the mask is made from the clean, upright copy, 800 px wide whatever the shape
     w, h = (int(n) for n in magick("identify", "-format", "%w %h", str(web)).split())
     longest = max(MASK_WIDTH, round(MASK_WIDTH * h / w))
     # positive: dark areas take the ink, so fading to colour reveals the photo
@@ -104,7 +98,6 @@ def main() -> None:
     print(f"added {slug}:\n  {web}\n  {assets / f'{slug}-mask.png'}\n  {note}  <- write the story here (optional)")
     if not a.alt:
         print("  note: replace alt \"TODO\" before building — the site refuses it")
-
 
 if __name__ == "__main__":
     main()

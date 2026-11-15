@@ -2,12 +2,10 @@
 import Base from './Base.astro';
 import Plate from '../components/Plate.astro';
 import AudioControls from '../components/AudioControls.astro';
-import { COPY, baseFor, dirFor, fmtDate, type Lang } from '../data/site';
+import { COPY, dirFor, fmtDate, sectionHref, type Lang } from '../data/site';
 
 interface Props {
-  /** the SITE language: navigation, footer, labels. Stays whatever the reader chose. */
   lang: Lang;
-  /** the POST's language: its title, description, tags and body */
   contentLang: Lang;
   title: string;
   date: Date;
@@ -16,17 +14,27 @@ interface Props {
   plate?: string;
   index?: string;
   canonical?: string;
-  /** recording of this page, if any */
   audio?: { src: string; duration?: string };
-  /** 'writing' or 'talks' — where tag links and "all" point */
   section?: 'writing' | 'talks';
-  /** this page's own-language URL, used as the track's href */
   href?: string;
 }
 
-const { lang, contentLang, title, date, description, tags = [], plate, index, canonical, audio, section = 'writing', href } = Astro.props;
+const {
+  lang,
+  contentLang,
+  title,
+  date,
+  description,
+  tags = [],
+  plate,
+  index,
+  canonical,
+  audio,
+  section = 'writing',
+  href,
+} = Astro.props;
 const t = COPY[lang];
-const base = baseFor(lang);
+const sectionUrl = sectionHref(lang, section);
 const cdir = dirFor(contentLang);
 ---
 
@@ -39,7 +47,15 @@ const cdir = dirFor(contentLang);
   system keys off: the [lang='ar'] rules in type.css switch the display and
   reading faces, leading, size and tracking for that subtree only.
 -->
-<Base lang={lang} title={title} description={description} navSurface="ink" canonical={canonical} translated={false} ogType="article">
+<Base
+  lang={lang}
+  title={title}
+  description={description}
+  navSurface="ink"
+  canonical={canonical}
+  translated={false}
+  ogType="article"
+>
   <article>
     <header class="band band--tight s-ink">
       <div class="container">
@@ -51,52 +67,56 @@ const cdir = dirFor(contentLang);
 
         <div class="essay__head" lang={contentLang} dir={cdir}>
           <h1 class="display display--heading">{title}</h1>
-          {description && <p class="read read--lead" style="opacity:.85">{description}</p>}
+          {description && (
+            <p class="read read--lead" style="opacity:.85">
+              {description}
+            </p>
+          )}
         </div>
-        {
-          audio && href && (
-            <div style="margin-block-start: var(--s-2xl)">
-              <AudioControls
-                lang={lang}
-                track={{ src: audio.src, duration: audio.duration, title, href, lang: contentLang, kind: section === 'talks' ? 'talk' : 'post' }}
-              />
-            </div>
-          )
-        }
+        {audio && href && (
+          <div style="margin-block-start: var(--s-2xl)">
+            <AudioControls
+              lang={lang}
+              track={{
+                src: audio.src,
+                duration: audio.duration,
+                title,
+                href,
+                lang: contentLang,
+                kind: section === 'talks' ? 'talk' : 'post',
+              }}
+            />
+          </div>
+        )}
 
-        {
-          tags.length > 0 && (
-            <div class="tags" style="margin-block-start: var(--s-xl)" lang={contentLang} dir={cdir}>
-              {tags.map((tag) => (
-                <a
-                  class="pill chrome chrome--info chrome--intl"
-                  href={`${base}/${section}?tag=${encodeURIComponent(tag)}`}
-                >
-                  {tag}
-                </a>
-              ))}
-            </div>
-          )
-        }
+        {tags.length > 0 && (
+          <div class="tags" style="margin-block-start: var(--s-xl)" lang={contentLang} dir={cdir}>
+            {tags.map((tag) => (
+              <a class="pill chrome chrome--info chrome--intl" href={`${sectionUrl}?tag=${encodeURIComponent(tag)}`}>
+                {tag}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </header>
 
     <div class="band s-paper">
       <div class="container">
-        {
-          plate && (
-            <div style="margin-block-end: var(--s-4xl)">
-              <Plate name={plate} lang={lang} shape="wide" credit={true} alt="" />
-            </div>
-          )
-        }
+        {plate && (
+          <div style="margin-block-end: var(--s-4xl)">
+            <Plate name={plate} lang={lang} shape="wide" credit={true} alt="" />
+          </div>
+        )}
 
         <div class="prose essay__body" style="margin-block-start: 0" lang={contentLang} dir={cdir}>
           <slot />
         </div>
 
         <p style="margin-block-start: var(--s-4xl)">
-          <a class="btn btn--outline" href={`${base}/${section}`}>{section === 'talks' ? t.allTalks : t.readAll}</a>
+          <a class="btn btn--outline" href={sectionUrl}>
+            {section === 'talks' ? t.allTalks : t.readAll}
+          </a>
         </p>
       </div>
     </div>

@@ -1,5 +1,3 @@
-/** Pure audio helpers. No DOM, no imports — unit-tested with `node --test`. */
-
 export interface Track {
   src: string;
   title: string;
@@ -16,10 +14,12 @@ export function nextRate(r: number): number {
   return i < 0 ? 1 : RATES[(i + 1) % RATES.length];
 }
 
-/** "14:32" → 872, "1:02:05" → 3725. Anything else → undefined. */
 export function parseDuration(s?: string): number | undefined {
   if (!s || !/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return undefined;
-  return s.split(':').map(Number).reduce((acc, n) => acc * 60 + n, 0);
+  return s
+    .split(':')
+    .map(Number)
+    .reduce((acc, n) => acc * 60 + n, 0);
 }
 
 export function formatTime(sec: number): string {
@@ -34,7 +34,6 @@ export function formatTime(sec: number): string {
 export const posKey = (src: string) => `audio:pos:${src}`;
 export const CURRENT_KEY = 'audio:current';
 
-/** Where to resume: nowhere if barely started or already (nearly) finished. */
 export function resumeFrom(saved: number | undefined, duration: number | undefined): number {
   if (!saved || saved < 5) return 0;
   if (duration && saved > duration - 10) return 0;
@@ -46,8 +45,6 @@ export function sameTrack(a?: { src: string } | null, b?: { src: string } | null
   return !!a && !!b && a.src === b.src;
 }
 
-/** A track's page in the language being browsed: the recording's own page is
- *  served under both prefixes, and the reader should stay in their language. */
 export function hrefIn(href: string, lang: 'en' | 'ar'): string {
   const bare = href.replace(/^\/ar(?=\/|$)/, '') || '/';
   return lang === 'ar' ? `/ar${bare}` : bare;
@@ -62,9 +59,12 @@ export function parseTrack(json: string | null | undefined): Track | null {
   try {
     const t = JSON.parse(json);
     const ok =
-      typeof t?.src === 'string' && isAudioSrc(t.src) &&
-      typeof t.title === 'string' && typeof t.href === 'string' &&
-      (t.lang === 'en' || t.lang === 'ar') && (t.kind === 'post' || t.kind === 'talk') &&
+      typeof t?.src === 'string' &&
+      isAudioSrc(t.src) &&
+      typeof t.title === 'string' &&
+      typeof t.href === 'string' &&
+      (t.lang === 'en' || t.lang === 'ar') &&
+      (t.kind === 'post' || t.kind === 'talk') &&
       (t.duration === undefined || typeof t.duration === 'number');
     return ok ? (t as Track) : null;
   } catch {

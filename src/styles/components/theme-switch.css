@@ -1,0 +1,32 @@
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  direction: ltr;
+}
+
+.swatch {
+  inline-size: 12px;
+  block-size: 12px;
+  background: var(--sw);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 55%, transparent);
+  transition:
+    transform var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.swatch:hover {
+  transform: scale(1.2);
+}
+.swatch[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 1px var(--bg),
+    0 0 0 2.5px var(--fg);
+}
+
+.theme-switch--lg {
+  gap: var(--s-m);
+}
+.theme-switch--lg .swatch {
+  inline-size: 28px;
+  block-size: 28px;
+}

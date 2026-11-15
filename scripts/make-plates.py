@@ -38,7 +38,6 @@ PAPER = "white"
 
 UA = "saeed-site-plate-builder/1.0 (personal website build script)"
 
-# slug, Commons filename, treatment, credit line
 PLATES = [
     (
         "optics",
@@ -92,7 +91,6 @@ PLATES = [
 
 SIZE = 1024
 
-
 def fetch(filename, dest):
     """Download the original via Commons Special:FilePath."""
     if dest.exists() and dest.stat().st_size > 60_000:
@@ -113,7 +111,6 @@ def fetch(filename, dest):
         return False
     dest.write_bytes(data)
     return True
-
 
 def dither(src, dest, treatment):
     """Reduce to the two site colors.
@@ -143,7 +140,6 @@ def dither(src, dest, treatment):
     if treatment == "halftone":
         mid = ["-ordered-dither", "h8x8a"]
     elif treatment == "scanline":
-        # squeeze vertically, dither, stretch back -> horizontal line texture
         mid = [
             "-resize", f"{SIZE}x{SIZE // 4}!",
             "-ordered-dither", "o4x4",
@@ -163,7 +159,6 @@ def dither(src, dest, treatment):
     ]
 
     subprocess.run(pre + mid + post, check=True, capture_output=True)
-
 
 def main():
     force = "--force" in sys.argv
@@ -201,7 +196,6 @@ def main():
     for p in sorted(OUT.glob("*.png")):
         print(f"  {p.name:22} {p.stat().st_size / 1024:6.1f} KB")
     print(f"\ncredits -> {CREDITS.relative_to(ROOT)}")
-
 
 if __name__ == "__main__":
     main()

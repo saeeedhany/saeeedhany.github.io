@@ -3,67 +3,51 @@ import SocialIcons from './SocialIcons.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import Burger from './Burger.astro';
 import SearchButton from './SearchButton.astro';
-import { SITE, COPY, baseFor, type Lang } from '../data/site';
+import { SITE, COPY, homeHref, type Lang } from '../data/site';
 import { getNav } from '../data/nav';
 
 interface Props {
   lang: Lang;
-  /** this same page in the other language */
   altHref: string;
   surface?: 'ink' | 'paper';
 }
 const { lang, surface = 'ink', altHref } = Astro.props;
-const NAV = await getNav();
+const nav = await getNav(lang, Astro.url.pathname);
 const t = COPY[lang];
 const mark = SITE.mark[lang];
-const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
-const half = Math.ceil(NAV.length / 2);
-const left = NAV.slice(0, half);
-const right = NAV.slice(half);
-
-const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
+const half = Math.ceil(nav.length / 2);
+const left = nav.slice(0, half);
+const right = nav.slice(half);
 ---
 
 <header class={`nav s-${surface}`}>
   <div class="container">
     <div class="nav__inner">
       <nav class="nav__links" aria-label={lang === 'ar' ? 'رئيسي' : 'Primary'}>
-        {
-          left.map((item) => (
-            <a
-              class="nav__link ui"
-              href={item.href[lang]}
-              aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
-            >
-              {item.label[lang]}
-            </a>
-          ))
-        }
+        {left.map((item) => (
+          <a class="nav__link ui" href={item.href} aria-current={item.current ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))}
       </nav>
 
-      <!-- wordmark dead centre, social marks beneath it — as in the reference -->
       <div class="nav__center">
-        <a class="nav__mark" href={baseFor(lang) || '/'}>
-          {mark[0]}<br />{mark[1]}
+        <a class="nav__mark" href={homeHref(lang)}>
+          {mark[0]}
+          <br />
+          {mark[1]}
         </a>
         <SocialIcons class="nav__social" size={14} />
       </div>
 
       <div class="nav__links nav__links--end">
         <nav class="nav__group" aria-label={lang === 'ar' ? 'ثانوي' : 'Secondary'}>
-          {
-            right.map((item) => (
-              <a
-                class="nav__link ui"
-                href={item.href[lang]}
-                aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
-              >
-                {item.label[lang]}
-              </a>
-            ))
-          }
-          <!-- the language switch is a token, not prose: it keeps the mono voice -->
+          {right.map((item) => (
+            <a class="nav__link ui" href={item.href} aria-current={item.current ? 'page' : undefined}>
+              {item.label}
+            </a>
+          ))}
           <a class="nav__link chrome" href={altHref} lang={lang === 'ar' ? 'en' : 'ar'}>
             {t.otherLang}
           </a>
@@ -72,7 +56,6 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
         <ThemeSwitch lang={lang} />
       </div>
 
-      <!-- mobile only: everything above collapses into the menu; search stays out -->
       <div class="nav__tools">
         <SearchButton lang={lang} />
         <Burger lang={lang} class="nav__burger" />

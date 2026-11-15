@@ -3,19 +3,14 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { isAudioSrc } from './scripts/audio-core';
 
-/** A recording: an https:// link to a host (see README), or a file in public/audio/. */
 const audio = z.object({
   src: z.string().refine(isAudioSrc, 'audio src must be an https:// link or a site path like /audio/x.mp3'),
-  duration: z.string().regex(/^\d{1,2}:\d{2}(:\d{2})?$/).optional(), // "14:32" or "1:02:05"
+  duration: z
+    .string()
+    .regex(/^\d{1,2}:\d{2}(:\d{2})?$/)
+    .optional(),
 });
 
-/**
- * One `writing` collection with `lang` as a field, rather than separate ar/en
- * collections. Keeps "latest across both languages" a single query.
- *
- * `plate` is the dithered manuscript image; `plateSource` credits the manuscript
- * it came from and is rendered under every plate.
- */
 const writing = defineCollection({
   loader: glob({ base: './src/content/writing', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
@@ -31,7 +26,6 @@ const writing = defineCollection({
   }),
 });
 
-/** Carried over from the old site, essentially unchanged. */
 const books = defineCollection({
   loader: glob({ base: './src/content/books', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
@@ -50,7 +44,6 @@ const books = defineCollection({
   }),
 });
 
-/** Talks: recordings, each with notes/transcript as the body (optional). */
 const talks = defineCollection({
   // files starting with `_` (the template) are not content
   loader: glob({ base: './src/content/talks', pattern: '**/[^_]*.{md,mdx}' }),
@@ -60,16 +53,12 @@ const talks = defineCollection({
     lang: z.enum(['ar', 'en']),
     description: z.string().optional(),
     tags: z.array(z.string()).default([]),
-    audio, // required for talks
+    audio,
     plate: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });
 
-/**
- * Gallery: one note file per photo (see scripts/add-photo.py). The body, if
- * any, is the photo's story.
- */
 const gallery = defineCollection({
   loader: glob({ base: './src/content/gallery', pattern: '**/[^_]*.md' }),
   schema: ({ image }) =>
@@ -77,11 +66,14 @@ const gallery = defineCollection({
       image: image(),
       mask: image(),
       // what a screen reader says; the script's placeholder fails the build
-      alt: z.string().min(1).refine((s) => s !== 'TODO', 'write the alt text for this photo'),
+      alt: z
+        .string()
+        .min(1)
+        .refine((s) => s !== 'TODO', 'write the alt text for this photo'),
       date: z.coerce.date(),
       title: z.string().optional(),
       place: z.string().optional(),
-      lang: z.enum(['ar', 'en']).default('en'), // language of the title and story
+      lang: z.enum(['ar', 'en']).default('en'),
       draft: z.boolean().default(false),
     }),
 });

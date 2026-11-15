@@ -1,0 +1,72 @@
+.quote {
+  position: relative;
+  overflow: hidden;
+}
+
+.quote__plate {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+/* opacity lives on the duo container, never the img: a translucent img would
+   multiply to grey instead of black and break the exact two-colour mapping */
+.quote__plate {
+  opacity: 0.4;
+}
+.quote__plate img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.quote::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 42%, transparent 45%, var(--ink) 100%);
+}
+
+.quote__inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: var(--s-xl);
+  justify-items: center;
+  text-align: center;
+}
+
+/* The epigraph is quoted manuscript prose, so it takes the READING face, not
+   the display face. Two reasons: Amiri positions tashkeel correctly where Reem
+   Kufi collides with it, and it draws a real distinction — Kufi is used for
+   Saeed's own declarations, Naskh for quoted scholarship. */
+.quote__text {
+  max-inline-size: 44ch;
+  font-family: var(--f-read);
+  font-size: clamp(1.15rem, 0.95rem + 0.85vw, 26px);
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+[dir='ltr'] .quote__inner,
+[lang='en'] .quote__inner {
+  justify-items: start;
+  text-align: start;
+}
+
+[dir='ltr'] .quote__text,
+[lang='en'] .quote__text {
+  max-inline-size: 54ch;
+}
+
+/* the attribution must share the quote's measure so their edges line up */
+[dir='ltr'] .quote__attr,
+[lang='en'] .quote__attr {
+  max-inline-size: 54ch;
+  inline-size: 100%;
+}
+
+.quote__attr {
+  opacity: 0.7;
+}

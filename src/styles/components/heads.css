@@ -1,0 +1,31 @@
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-xl);
+  margin-block-end: var(--s-2xl);
+}
+
+.head__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.head__glyph {
+  inline-size: 20px;
+  margin-block-start: 0.35em;
+  flex: none;
+  opacity: 0.8;
+}
+
+.head__link {
+  flex: none;
+  text-decoration: underline;
+  text-decoration-thickness: var(--hair);
+  text-underline-offset: 3px;
+  opacity: 0.8;
+}
+.head__link:hover {
+  opacity: 1;
+}

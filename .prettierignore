@@ -1,0 +1,11 @@
+dist/
+.astro/
+node_modules/
+docs/
+reference/
+tests/
+public/
+src/content/
+src/styles/fonts.css
+pnpm-lock.yaml
+README.md

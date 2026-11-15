@@ -2,20 +2,17 @@
 import ThemeSwitch from './ThemeSwitch.astro';
 import Burger from './Burger.astro';
 import SearchButton from './SearchButton.astro';
-import { SITE, COPY, baseFor, type Lang } from '../data/site';
+import { SITE, COPY, homeHref, type Lang } from '../data/site';
 import { getNav } from '../data/nav';
 
 interface Props {
   lang: Lang;
-  /** this same page in the other language */
   altHref: string;
 }
 const { lang, altHref } = Astro.props;
-const NAV = await getNav();
+const nav = await getNav(lang, Astro.url.pathname);
 const t = COPY[lang];
 const mark = SITE.mark[lang];
-const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const isCurrent = (href: string) => path === href || path.startsWith(href + '/');
 ---
 
 <!--
@@ -30,23 +27,17 @@ const isCurrent = (href: string) => path === href || path.startsWith(href + '/')
   <div class="navbar__inner s-paper">
     <div class="container">
       <div class="navbar__row">
-        <a class="navbar__mark" href={baseFor(lang) || '/'}>
+        <a class="navbar__mark" href={homeHref(lang)}>
           {mark[0]} {mark[1]}
         </a>
 
         <div class="navbar__end">
           <nav class="navbar__links" aria-label={lang === 'ar' ? 'تنقل سريع' : 'Quick navigation'}>
-            {
-              NAV.map((item) => (
-                <a
-                  class="nav__link ui"
-                  href={item.href[lang]}
-                  aria-current={isCurrent(item.href[lang]) ? 'page' : undefined}
-                >
-                  {item.label[lang]}
-                </a>
-              ))
-            }
+            {nav.map((item) => (
+              <a class="nav__link ui" href={item.href} aria-current={item.current ? 'page' : undefined}>
+                {item.label}
+              </a>
+            ))}
             <a class="nav__link chrome" href={altHref} lang={lang === 'ar' ? 'en' : 'ar'}>
               {t.otherLang}
             </a>

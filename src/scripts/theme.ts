@@ -10,16 +10,13 @@ const savedTheme = (): string | null => {
   }
 };
 
-/** Mark the active swatch in every switch on the page. */
 function sync() {
-  const current =
-    root.dataset.theme ?? document.querySelector<HTMLElement>('[data-theme-set]')?.dataset.themeSet;
+  const current = root.dataset.theme ?? document.querySelector<HTMLElement>('[data-theme-set]')?.dataset.themeSet;
   for (const b of document.querySelectorAll<HTMLElement>('[data-theme-set]')) {
     b.setAttribute('aria-pressed', String(b.dataset.themeSet === current));
   }
 }
 
-// One delegated listener for the whole visit.
 once('theme:click', () => {
   document.addEventListener('click', (e) => {
     const t = e.target;
@@ -55,6 +52,5 @@ once('theme:swap', () => {
     if (!id || !ink) return;
     root.dataset.theme = id;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', ink);
-    // theme-ready is re-added by onPage('theme') after the new page paints
   });
 });

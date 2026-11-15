@@ -1,42 +1,31 @@
 import type { APIRoute } from 'astro';
-import { getCollection } from 'astro:content';
-import { postCanonical } from '../data/posts';
-import { talkCanonical } from '../data/talks';
-import { slugOf } from '../data/site';
+import { bookCanonical, getBooks } from '../data/books';
+import { getPosts, postCanonical } from '../data/posts';
+import { getTalks, talkCanonical } from '../data/talks';
+import { homeHref, NAV, sectionHref, type Lang } from '../data/site';
 
-const ORIGIN = 'https://saeed.cool';
-const STATIC_PATHS = [
-  '/',
-  '/ar/',
-  '/about/',
-  '/ar/about/',
-  '/writing/',
-  '/ar/writing/',
-  '/talks/',
-  '/ar/talks/',
-  '/books/',
-  '/ar/books/',
-  '/gallery/',
-  '/ar/gallery/',
-];
+const LANGS: Lang[] = ['en', 'ar'];
+const STATIC_PATHS = LANGS.flatMap((lang) => [homeHref(lang), ...NAV.map((item) => sectionHref(lang, item.section))]);
 
 const escapeXml = (value: string) =>
-  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
-export const GET: APIRoute = async () => {
-  const [posts, talks, books] = await Promise.all([
-    getCollection('writing', (entry) => !entry.data.draft),
-    getCollection('talks', (entry) => !entry.data.draft),
-    getCollection('books', (entry) => !entry.data.draft),
-  ]);
+export const GET: APIRoute = async ({ site }) => {
+  const origin = site ?? 'https://saeed.cool';
+  const [posts, talks, books] = await Promise.all([getPosts(), getTalks(), getBooks()]);
 
   // Include only indexable canonical URLs. Alternate-language chrome copies
   // of essays, talks and books are intentionally omitted from this sitemap.
   const urls = new Set<string>([
-    ...STATIC_PATHS.map((path) => new URL(path, ORIGIN).href),
-    ...posts.map((post) => new URL(postCanonical(post), ORIGIN).href),
-    ...talks.map((talk) => new URL(talkCanonical(talk), ORIGIN).href),
-    ...books.map((book) => new URL(`/books/${slugOf(book.id)}/`, ORIGIN).href),
+    ...STATIC_PATHS.map((path) => new URL(path, origin).href),
+    ...posts.map((post) => new URL(postCanonical(post), origin).href),
+    ...talks.map((talk) => new URL(talkCanonical(talk), origin).href),
+    ...books.map((book) => new URL(bookCanonical(book), origin).href),
   ]);
 
   const entries = [...urls]

@@ -52,8 +52,6 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
     if (v && chips.some((c) => c.dataset.f === k && c.dataset.v === v)) state[k] = v;
   }
 
-  // text search: every word of the query must appear in the item's text,
-  // with the same Arabic-aware folding as the site-wide search
   const hay = new Map(items.map((el) => [el, fold(el.dataset.text ?? el.textContent ?? '').text]));
   let query = field ? (params.get('q') ?? '') : '';
   let tokens = tokensOf(query);
@@ -89,7 +87,6 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
       chip.setAttribute('aria-pressed', String(pressed));
       if (n === 0 && !pressed) chip.setAttribute('aria-disabled', 'true');
       else chip.removeAttribute('aria-disabled');
-      // an overflow tag that is selected must stay visible when collapsed
       if (chip.hasAttribute('data-overflow')) chip.hidden = !expanded && !pressed;
     }
 
@@ -113,7 +110,6 @@ export function initFilters(name: string, predicates: Record<string, Predicate>)
     if (!chip || chip.getAttribute('aria-disabled') === 'true') return;
     const k = chip.dataset.f!;
     const v = chip.dataset.v!;
-    // pressing the active option again returns to "all"
     state[k] = state[k] === v ? '' : v;
     apply(true);
   });

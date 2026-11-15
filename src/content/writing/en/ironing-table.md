@@ -51,7 +51,7 @@ At that time, I spent a period studying and working on an ironing table.
 That phase was actually beautiful.
 
 My interest in low-level systems grew a lot. I started studying computer graphics and built this project:
-→ [Computer Graphics Project](https://github.com/saeeedhany/tiny-but-shiny/tree/main/paint)
+→ [Computer Graphics Project](https://github.com/saeeedhany/spint)
 
 I stayed in that phase for a while until, thankfully, I was finally able to get my own laptop.
 

@@ -1,0 +1,31 @@
+.essay__head {
+  display: grid;
+  gap: var(--s-l);
+  max-inline-size: min(100%, 44rem);
+  /* A narrow block is placed by its PARENT's direction, so an Arabic post on
+     the English site sat at the left with its text right-aligned inside it.
+     margin-inline-end resolves in the element's OWN direction: this pins the
+     block to the start of its own language in all four ltr/rtl pairings. */
+  margin-inline-end: auto;
+}
+
+.essay__head > .read {
+  max-inline-size: 46ch;
+}
+
+.essay__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-l);
+  opacity: 0.75;
+}
+
+.essay__body {
+  margin-block-start: var(--s-4xl);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-xs);
+}

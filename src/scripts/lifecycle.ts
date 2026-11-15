@@ -76,7 +76,8 @@ if (!reg.onceKeys.has('router:skipped')) {
   reg.onceKeys.add('router:skipped');
   addEventListener('unhandledrejection', (e) => {
     const r = e.reason;
-    if (r instanceof DOMException && r.name === 'AbortError' && r.message === 'Transition was skipped') e.preventDefault();
+    if (r instanceof DOMException && r.name === 'AbortError' && r.message === 'Transition was skipped')
+      e.preventDefault();
   });
 }
 
@@ -93,7 +94,6 @@ export function once(key: string, fn: () => void): void {
   fn();
 }
 
-/** A value created once per visit and shared by every script. */
 export function shared<T>(key: string, create: () => T): T {
   if (!reg.store.has(key)) reg.store.set(key, create());
   return reg.store.get(key) as T;

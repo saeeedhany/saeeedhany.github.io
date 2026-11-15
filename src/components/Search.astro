@@ -1,5 +1,5 @@
 ---
-import { getCollection } from 'astro:content';
+import { getBooks } from '../data/books';
 import { getPosts } from '../data/posts';
 import { COPY, baseFor, type Lang } from '../data/site';
 
@@ -9,9 +9,8 @@ interface Props {
 const { lang } = Astro.props;
 const t = COPY[lang];
 const posts = (await getPosts()).length;
-const books = (await getCollection('books', (e) => !e.data.draft)).length;
+const books = (await getBooks()).length;
 
-// labels the client script needs; everything else is rendered here
 const i18n = {
   writing: t.writing,
   talks: t.talks,
@@ -24,15 +23,6 @@ const i18n = {
 };
 ---
 
-<!--
-  Site-wide search across writing AND books. One per page, opened by any
-  [data-search-open] control or the "/" and Ctrl/Cmd+K shortcuts.
-
-  Same mechanics as the menu: a clip-path curtain, everything else made inert
-  while open (containing focus without a hand-written trap), scrolling locked,
-  focus returned on close. It is an ARIA combobox: the input owns a listbox of
-  results, arrow keys move an active option, Enter opens it.
--->
 <div
   class="search s-ink"
   id="site-search"
@@ -47,8 +37,16 @@ const i18n = {
 >
   <div class="search__body container">
     <div class="search__bar">
-      <svg class="search__glass" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
-        <circle cx="8.5" cy="8.5" r="6" /><path d="M13 13l5 5" />
+      <svg
+        class="search__glass"
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+      >
+        <circle cx="8.5" cy="8.5" r="6" />
+        <path d="M13 13l5 5" />
       </svg>
       <input
         class="search__input"
@@ -67,11 +65,16 @@ const i18n = {
       />
       <button type="button" class="menu__close search__close" data-search-close>
         <span class="burger__label ui">{t.close}</span>
-        <span class="menu__x" aria-hidden="true"><span></span><span></span></span>
+        <span class="menu__x" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </span>
       </button>
     </div>
 
-    <p class="search__status chrome chrome--intl" aria-live="polite" data-search-status>{i18n.hint}</p>
+    <p class="search__status chrome chrome--intl" aria-live="polite" data-search-status>
+      {i18n.hint}
+    </p>
     <div class="search__results" id="search-results" role="listbox" aria-label={t.search} data-search-results></div>
   </div>
 </div>
@@ -80,8 +83,28 @@ const i18n = {
   import { onPage, shared } from '../scripts/lifecycle';
   import { fold, positions, tokensOf } from '../scripts/fold';
 
-  type Post = { type: 'post'; slug: string; lang: 'en' | 'ar'; title: string; description: string; tags: string[]; date: string; body: string };
-  type Book = { type: 'book'; slug: string; title: string; author: string; category: string; status: string; year: number | null; description: string; tags: string[]; body: string };
+  type Post = {
+    type: 'post';
+    slug: string;
+    lang: 'en' | 'ar';
+    title: string;
+    description: string;
+    tags: string[];
+    date: string;
+    body: string;
+  };
+  type Book = {
+    type: 'book';
+    slug: string;
+    title: string;
+    author: string;
+    category: string;
+    status: string;
+    year: number | null;
+    description: string;
+    tags: string[];
+    body: string;
+  };
   type Talk = Omit<Post, 'type'> & { type: 'talk' };
   type Photo = Omit<Post, 'type'> & { type: 'photo' };
   type Doc = Post | Talk | Book | Photo;
@@ -97,31 +120,35 @@ const i18n = {
     const i18n = JSON.parse(root.dataset.i18n ?? '{}');
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ---- index ------------------------------------------------------------
     type Entry = { doc: Doc; f: Record<string, string> };
     let entries: Entry[] | null = null;
     let loading: Promise<void> | null = null;
     const fieldsOf = (doc: Doc): Record<string, string> => ({
       title: fold(doc.title).text,
       tags: fold(doc.tags.join(' ')).text,
-      meta: fold(doc.type === 'book' ? `${doc.author} ${doc.category} ${i18n.categories?.[doc.category] ?? ''}` : '').text,
+      meta: fold(doc.type === 'book' ? `${doc.author} ${doc.category} ${i18n.categories?.[doc.category] ?? ''}` : '')
+        .text,
       description: fold(doc.description).text,
       body: fold(doc.body).text,
     });
     const fetchIndex = () =>
-      shared<{ p: Promise<{ posts: Post[]; talks?: Talk[]; books: Book[]; photos?: Photo[] }> | null }>('search:index', () => ({ p: null }));
+      shared<{ p: Promise<{ posts: Post[]; talks?: Talk[]; books: Book[]; photos?: Photo[] }> | null }>(
+        'search:index',
+        () => ({ p: null }),
+      );
     const load = () =>
       (loading ??= (fetchIndex().p ??= fetch('/search.json').then((r) => r.json()))
         .then((data: { posts: Post[]; talks?: Talk[]; books: Book[]; photos?: Photo[] }) => {
-          entries = [...data.posts, ...(data.talks ?? []), ...data.books, ...(data.photos ?? [])].map((doc) => ({ doc, f: fieldsOf(doc) }));
+          entries = [...data.posts, ...(data.talks ?? []), ...data.books, ...(data.photos ?? [])].map((doc) => ({
+            doc,
+            f: fieldsOf(doc),
+          }));
         })
         .catch(() => {
           loading = null;
-          fetchIndex().p = null; // allow a retry on next open
+          fetchIndex().p = null;
         }));
 
-    // Every token must appear somewhere (AND). Where it appears sets the
-    // weight: a title hit outranks a tag, a tag a description, and so on.
     const WEIGHT: Record<string, number> = { title: 12, tags: 7, meta: 6, description: 3, body: 1 };
     function score(e: Entry, tokens: string[]): number {
       let total = 0;
@@ -161,7 +188,6 @@ const i18n = {
       return frag;
     }
 
-    /** ~150 chars of the body around the first token found in it */
     function snippet(e: Entry, tokens: string[]): string | null {
       const body = e.doc.body;
       if (!body) return null;
@@ -229,7 +255,8 @@ const i18n = {
         const g = document.createElement('div');
         g.className = 'hit-group';
         g.setAttribute('role', 'group');
-        const label = type === 'post' ? i18n.writing : type === 'talk' ? i18n.talks : type === 'book' ? i18n.library : i18n.gallery;
+        const label =
+          type === 'post' ? i18n.writing : type === 'talk' ? i18n.talks : type === 'book' ? i18n.library : i18n.gallery;
         g.setAttribute('aria-label', label);
         const h = document.createElement('p');
         h.className = 'hit-group__head chrome chrome--intl';
@@ -244,9 +271,11 @@ const i18n = {
           a.id = `hit-${options.length}`;
           a.setAttribute('role', 'option');
           a.href =
-            d.type === 'book' ? `${base}/books/${d.slug}`
-            : d.type === 'photo' ? `${base}/gallery#${d.slug}`
-            : `${base}/${d.type === 'talk' ? 'talks' : 'writing'}/${d.slug}`;
+            d.type === 'book'
+              ? `${base}/books/${d.slug}/`
+              : d.type === 'photo'
+                ? `${base}/gallery/#${d.slug}`
+                : `${base}/${d.type === 'talk' ? 'talks' : 'writing'}/${d.slug}/`;
 
           const meta = document.createElement('span');
           meta.className = 'hit__meta chrome';
@@ -269,7 +298,9 @@ const i18n = {
           title.append(highlighted(d.title, tokens));
           a.append(meta, title);
 
-          const s = positions(e.f.title, tokens[0]).length ? d.description || null : snippet(e, tokens) ?? d.description;
+          const s = positions(e.f.title, tokens[0]).length
+            ? d.description || null
+            : (snippet(e, tokens) ?? d.description);
           if (s) {
             const p = document.createElement('span');
             p.className = 'hit__snippet';
@@ -286,7 +317,6 @@ const i18n = {
       setActive(0);
     }
 
-    // ---- open / close -----------------------------------------------------
     let returnTo: HTMLElement | null = null;
     const others = () =>
       Array.from(document.body.children).filter(
@@ -304,8 +334,8 @@ const i18n = {
       const inMenu = !!from?.closest('[data-menu]');
       if (inMenu) document.dispatchEvent(new CustomEvent('menu:close'));
       returnTo = inMenu
-        ? Array.from(document.querySelectorAll<HTMLElement>('[data-menu-open]')).find(focusable) ?? null
-        : from ?? (document.activeElement as HTMLElement | null);
+        ? (Array.from(document.querySelectorAll<HTMLElement>('[data-menu-open]')).find(focusable) ?? null)
+        : (from ?? (document.activeElement as HTMLElement | null));
 
       load()?.then(render);
       wasInert = new Set(others().filter((el) => el.inert));
@@ -314,10 +344,13 @@ const i18n = {
       others().forEach((el) => (el.inert = true));
       document.dispatchEvent(new CustomEvent('site:lock'));
       document.querySelectorAll('[data-search-open]').forEach((b) => b.setAttribute('aria-expanded', 'true'));
-      setTimeout(() => {
-        input.focus({ preventScroll: true });
-        input.select(); // reopening: type straight over the last query
-      }, reduce ? 0 : 140);
+      setTimeout(
+        () => {
+          input.focus({ preventScroll: true });
+          input.select();
+        },
+        reduce ? 0 : 140,
+      );
     }
 
     function close() {
@@ -335,17 +368,24 @@ const i18n = {
     const el = (t: EventTarget | null): Element | null =>
       t instanceof Element ? t : t instanceof Node ? t.parentElement : null;
 
-    document.addEventListener('click', (e) => {
-      const opener = el(e.target)?.closest<HTMLElement>('[data-search-open]');
-      if (opener) {
-        e.preventDefault();
-        open(opener);
-      }
-    }, { signal });
-    // warm the index as soon as intent shows, so results are instant on open
-    document.addEventListener('pointerover', (e) => {
-      if (el(e.target)?.closest('[data-search-open]')) load();
-    }, { signal });
+    document.addEventListener(
+      'click',
+      (e) => {
+        const opener = el(e.target)?.closest<HTMLElement>('[data-search-open]');
+        if (opener) {
+          e.preventDefault();
+          open(opener);
+        }
+      },
+      { signal },
+    );
+    document.addEventListener(
+      'pointerover',
+      (e) => {
+        if (el(e.target)?.closest('[data-search-open]')) load();
+      },
+      { signal },
+    );
     closeBtn.addEventListener('click', close);
     input.addEventListener('input', render);
 
@@ -358,24 +398,29 @@ const i18n = {
         setActive(active - 1);
       } else if (e.key === 'Enter' && options[active]) {
         e.preventDefault();
-        options[active].click(); // same path as a click: the router (or the gallery) takes it from here
+        options[active].click();
       }
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && root!.dataset.open === 'true') {
-        close();
-        return;
-      }
-      const typing = el(e.target)?.closest('input, textarea, select, [contenteditable="true"]');
-      if ((e.key === '/' && !typing && !e.metaKey && !e.ctrlKey) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
-        e.preventDefault();
-        open(document.activeElement as HTMLElement);
-      }
-    }, { signal });
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key === 'Escape' && root!.dataset.open === 'true') {
+          close();
+          return;
+        }
+        const typing = el(e.target)?.closest('input, textarea, select, [contenteditable="true"]');
+        if (
+          (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey) ||
+          ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')
+        ) {
+          e.preventDefault();
+          open(document.activeElement as HTMLElement);
+        }
+      },
+      { signal },
+    );
 
-    // pointer movement moves the active option too, so Enter and a click
-    // always agree on which result they mean
     list.addEventListener('pointermove', (e) => {
       const o = el(e.target)?.closest<HTMLAnchorElement>('.hit');
       if (o) setActive(options.indexOf(o));
@@ -387,7 +432,6 @@ const i18n = {
       if (el(e.target)?.closest('.hit')) close();
     });
 
-    // leaving the page with search open: restore the page underneath
     return () => {
       if (root.dataset.open === 'true') close();
     };

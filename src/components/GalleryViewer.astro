@@ -8,23 +8,23 @@ const t = COPY[Astro.props.lang];
 const chevron = 'M10 3 5 8l5 5';
 ---
 
-<!--
-  One full-screen viewer per gallery page. It is moved to the end of <body> on
-  load so every other body child can be made inert while it is open (the same
-  technique as the search overlay). Content comes from the tiles' data-*
-  attributes and the <template data-story> elements; nothing here is fetched.
--->
 <div class="viewer s-ink" data-viewer hidden role="dialog" aria-modal="true" aria-label={t.viewerLabel}>
   <div class="viewer__bar container">
     <span class="viewer__count chrome" data-v-count></span>
     <div class="viewer__nav">
       <button type="button" class="viewer__btn" data-v="prev" aria-label={t.prevPhoto}>
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d={chevron} fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d={chevron} fill="none" stroke="currentColor" stroke-width="1.5" />
+        </svg>
       </button>
       <button type="button" class="viewer__btn viewer__btn--next" data-v="next" aria-label={t.nextPhoto}>
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d={chevron} fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d={chevron} fill="none" stroke="currentColor" stroke-width="1.5" />
+        </svg>
       </button>
-      <button type="button" class="viewer__btn" data-v="close" aria-label={t.closeViewer}>✕</button>
+      <button type="button" class="viewer__btn" data-v="close" aria-label={t.closeViewer}>
+        ✕
+      </button>
     </div>
   </div>
   <div class="viewer__body container" data-v-body>
@@ -65,7 +65,6 @@ const chevron = 'M10 3 5 8l5 5';
     const rtl = () => document.documentElement.dir === 'rtl';
     const pad = (n: number) => String(n).padStart(2, '0');
     let index = -1;
-    // colour is held back while a sweep runs, then fades up once it lands
     let holdColour = false;
     const revealColour = () => {
       if (!holdColour) requestAnimationFrame(() => frame.setAttribute('data-ready', ''));
@@ -77,7 +76,6 @@ const chevron = 'M10 3 5 8l5 5';
         (el): el is HTMLElement => el !== viewer && el instanceof HTMLElement && el.tagName !== 'SCRIPT',
       );
 
-    /** Fill the viewer with photo i (wrapping). */
     function show(i: number) {
       index = (i + tiles.length) % tiles.length;
       const d = tiles[index].dataset;
@@ -99,7 +97,6 @@ const chevron = 'M10 3 5 8l5 5';
       story.replaceChildren(...(tpl ? [tpl.content.cloneNode(true)] : []));
       body.toggleAttribute('data-has-story', !!tpl);
       side.hidden = !tpl && !d.title && !meta.textContent;
-      // warm the neighbours so moving feels instant
       for (const k of [index - 1, index + 1]) {
         const n = tiles[(k + tiles.length) % tiles.length];
         if (n !== tiles[index]) new Image().src = n.dataset.full ?? '';
@@ -119,7 +116,6 @@ const chevron = 'M10 3 5 8l5 5';
       q('[data-v="close"]').focus({ preventScroll: true });
     }
 
-    /** Close without touching history (Task 7 wraps this). */
     function hide() {
       pending = null;
       if (viewer!.hidden) return;
@@ -130,7 +126,6 @@ const chevron = 'M10 3 5 8l5 5';
       index = -1;
     }
 
-    // ---- history: /gallery#<slug> -------------------------------------------
     const path = location.pathname;
     const slugAt = (hash: string) => decodeURIComponent(hash.slice(1));
     const find = (slug: string) => tiles.findIndex((t) => t.dataset.photo === slug);
@@ -147,11 +142,6 @@ const chevron = 'M10 3 5 8l5 5';
       void navigate(url(index));
       onEntry = pushed = true;
     }
-    // Moving between photos: a dither sweep in the theme ink. The photo drops
-    // into its dither, a dithered edge sweeps toward the arrow pressed (or with
-    // the finger), and the new photo fades up to colour once it has landed.
-    // A View Transition scoped to the viewer's content (the page itself is told
-    // not to animate); a press mid-move finishes the sweep at once.
     type Dir = 'left' | 'right';
     const reduce = matchMedia('(prefers-reduced-motion: reduce)');
     let moving: ViewTransition | null = null;
@@ -185,7 +175,6 @@ const chevron = 'M10 3 5 8l5 5';
         t.finished.then(done, done);
       };
       clearTimeout(dropTimer);
-      // already in dither (mid-move, or colour not loaded yet): sweep now
       if (moving || !frame.hasAttribute('data-ready')) return sweep();
       frame.setAttribute('data-dropping', '');
       frame.removeAttribute('data-ready');
@@ -202,92 +191,121 @@ const chevron = 'M10 3 5 8l5 5';
       onEntry = false;
     }
 
-    // Back / Forward within this page: the router moves the address (it knows
-    // these entries); the viewer follows it.
-    addEventListener('popstate', () => {
-      if (location.pathname !== path) return; // leaving: the router's job
-      const i = find(slugAt(location.hash));
-      if (!onEntry && i < 0) return;
-      if (i >= 0) {
-        open(i);
-        onEntry = pushed = true;
-      } else {
-        hide();
-        onEntry = false;
-      }
-    }, { signal });
+    addEventListener(
+      'popstate',
+      () => {
+        if (location.pathname !== path) return; // leaving: the router's job
+        const i = find(slugAt(location.hash));
+        if (!onEntry && i < 0) return;
+        if (i >= 0) {
+          open(i);
+          onEntry = pushed = true;
+        } else {
+          hide();
+          onEntry = false;
+        }
+      },
+      { signal },
+    );
 
     // a link to #<slug> on this page (a search result, a story): open here.
     // Deferred a tick so an overlay that closes on the same click (search)
     // restores the page first; the viewer then takes over.
-    document.addEventListener('click', (e) => {
-      const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href]') : null;
-      if (!a || a.closest('[data-gallery]')) return;
-      const u = new URL(a.href, location.href);
-      if (u.origin !== location.origin || u.pathname.replace(/\/$/, '') !== path.replace(/\/$/, '')) return;
-      const i = find(slugAt(u.hash));
-      if (i < 0) return;
-      // preventDefault alone: Astro's link handler skips prevented clicks, and
-      // the event must still reach the search list so search can close
-      e.preventDefault();
-      setTimeout(() => openHere(i), 0);
-    }, { capture: true, signal });
+    document.addEventListener(
+      'click',
+      (e) => {
+        const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href]') : null;
+        if (!a || a.closest('[data-gallery]')) return;
+        const u = new URL(a.href, location.href);
+        if (u.origin !== location.origin || u.pathname.replace(/\/$/, '') !== path.replace(/\/$/, '')) return;
+        const i = find(slugAt(u.hash));
+        if (i < 0) return;
+        // preventDefault alone: Astro's link handler skips prevented clicks, and
+        // the event must still reach the search list so search can close
+        e.preventDefault();
+        setTimeout(() => openHere(i), 0);
+      },
+      { capture: true, signal },
+    );
 
-    addEventListener('hashchange', () => {
-      const i = find(slugAt(location.hash));
-      if (i >= 0) {
-        open(i);
-        onEntry = pushed = true;
-      }
-    }, { signal });
+    addEventListener(
+      'hashchange',
+      () => {
+        const i = find(slugAt(location.hash));
+        if (i >= 0) {
+          open(i);
+          onEntry = pushed = true;
+        }
+      },
+      { signal },
+    );
 
     tiles.forEach((t, i) =>
-      t.addEventListener('click', (e) => {
-        e.preventDefault();
-        openHere(i);
-      }, { signal }),
+      t.addEventListener(
+        'click',
+        (e) => {
+          e.preventDefault();
+          openHere(i);
+        },
+        { signal },
+      ),
     );
     q('[data-v="close"]').addEventListener('click', () => close(), { signal });
-    // the buttons sit (and point) the other way round on right-to-left pages
     q('[data-v="prev"]').addEventListener('click', () => go(at() - 1, rtl() ? 'right' : 'left'), { signal });
     q('[data-v="next"]').addEventListener('click', () => go(at() + 1, rtl() ? 'left' : 'right'), { signal });
 
     // capture: runs before the search overlay's own Escape handler, so with
     // search open on top this does nothing and search closes alone
-    document.addEventListener('keydown', (e) => {
-      if (viewer.hidden || document.querySelector<HTMLElement>('[data-search]')?.dataset.open === 'true') return;
-      if (e.key === 'Escape') close();
-      else if (e.key === 'ArrowRight') go(at() + (rtl() ? -1 : 1), 'right');
-      else if (e.key === 'ArrowLeft') go(at() + (rtl() ? 1 : -1), 'left');
-      else if (e.key === 'Home') go(0, rtl() ? 'right' : 'left');
-      else if (e.key === 'End') go(tiles.length - 1, rtl() ? 'left' : 'right');
-      else if (e.key === 'Tab') {
-        const f = [...viewer.querySelectorAll<HTMLElement>('button, a[href]')].filter((el) => el.getClientRects().length);
-        const first = f[0];
-        const last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) last.focus();
-        else if (!e.shiftKey && document.activeElement === last) first.focus();
-        else return;
-      } else return;
-      e.preventDefault();
-    }, { signal, capture: true });
+    document.addEventListener(
+      'keydown',
+      (e) => {
+        if (viewer.hidden || document.querySelector<HTMLElement>('[data-search]')?.dataset.open === 'true') return;
+        if (e.key === 'Escape') close();
+        else if (e.key === 'ArrowRight') go(at() + (rtl() ? -1 : 1), 'right');
+        else if (e.key === 'ArrowLeft') go(at() + (rtl() ? 1 : -1), 'left');
+        else if (e.key === 'Home') go(0, rtl() ? 'right' : 'left');
+        else if (e.key === 'End') go(tiles.length - 1, rtl() ? 'left' : 'right');
+        else if (e.key === 'Tab') {
+          const f = [...viewer.querySelectorAll<HTMLElement>('button, a[href]')].filter(
+            (el) => el.getClientRects().length,
+          );
+          const first = f[0];
+          const last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) last.focus();
+          else if (!e.shiftKey && document.activeElement === last) first.focus();
+          else return;
+        } else return;
+        e.preventDefault();
+      },
+      { signal, capture: true },
+    );
 
     // swipe: sideways moves, down closes (only from the top of the overlay).
     // Touch events, not pointer events: the overlay also scrolls natively.
-    let x0 = 0, y0 = 0, top0 = 0;
-    viewer.addEventListener('touchstart', (e) => {
-      x0 = e.touches[0].clientX;
-      y0 = e.touches[0].clientY;
-      top0 = viewer.scrollTop;
-    }, { passive: true, signal });
-    viewer.addEventListener('touchend', (e) => {
-      const dx = e.changedTouches[0].clientX - x0;
-      const dy = e.changedTouches[0].clientY - y0;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(at() + (dx < 0 ? 1 : -1) * (rtl() ? -1 : 1), dx < 0 ? 'left' : 'right');
-      else if (dy > 80 && dy > Math.abs(dx) && top0 <= 0) close();
-    }, { passive: true, signal });
+    let x0 = 0,
+      y0 = 0,
+      top0 = 0;
+    viewer.addEventListener(
+      'touchstart',
+      (e) => {
+        x0 = e.touches[0].clientX;
+        y0 = e.touches[0].clientY;
+        top0 = viewer.scrollTop;
+      },
+      { passive: true, signal },
+    );
+    viewer.addEventListener(
+      'touchend',
+      (e) => {
+        const dx = e.changedTouches[0].clientX - x0;
+        const dy = e.changedTouches[0].clientY - y0;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy))
+          go(at() + (dx < 0 ? 1 : -1) * (rtl() ? -1 : 1), dx < 0 ? 'left' : 'right');
+        else if (dy > 80 && dy > Math.abs(dx) && top0 <= 0) close();
+      },
+      { passive: true, signal },
+    );
 
-    // arriving with #<slug> (a shared link, or a search result from another page)
     const first = find(slugAt(location.hash));
     if (first >= 0) {
       open(first);
@@ -295,7 +313,6 @@ const chevron = 'M10 3 5 8l5 5';
       pushed = false;
     }
 
-    // leaving the page with the viewer open: release everything
     return () => hide();
   });
 </script>

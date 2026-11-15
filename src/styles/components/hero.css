@@ -1,0 +1,31 @@
+.hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+}
+
+.hero__copy {
+  --hero-widest-line-em: 4.65;
+  min-inline-size: 0;
+  container-type: inline-size;
+}
+.hero__copy .display--hero {
+  font-size: min(var(--hero-size), calc(100cqi / var(--hero-widest-line-em)));
+}
+
+.hero__art {
+  min-inline-size: 0;
+  margin-inline-end: calc(-1 * var(--gutter) / 2);
+}
+
+@media (max-width: 1023px) {
+  .hero__grid {
+    grid-template-columns: 1fr;
+    gap: var(--s-4xl);
+  }
+  .hero__art {
+    margin-inline-end: 0;
+    max-inline-size: 460px;
+  }
+}

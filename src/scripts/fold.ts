@@ -1,15 +1,10 @@
-/**
- * Text matching shared by the site search and the in-page list search.
- * Pure: no DOM, no imports — unit-tested with `node --test`.
- */
-
 // ---- normalisation --------------------------------------------------
 // Arabic is matched without tashkeel or tatweel, and with the letter
 // variants people type interchangeably folded together. `map` records,
 // for every character of the folded string, where it came from in the
 // original — so a match found in folded text can be highlighted in the
 // original, diacritics and all.
-const FOLD: Record<string, string> = { 'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ٱ': 'ا', 'ى': 'ي', 'ة': 'ه', 'ؤ': 'و', 'ئ': 'ي' };
+const FOLD: Record<string, string> = { أ: 'ا', إ: 'ا', آ: 'ا', ٱ: 'ا', ى: 'ي', ة: 'ه', ؤ: 'و', ئ: 'ي' };
 const SKIP = /[ً-ٰٟـ]/;
 export function fold(s: string): { text: string; map: number[] } {
   let text = '';
@@ -23,7 +18,10 @@ export function fold(s: string): { text: string; map: number[] } {
   }
   return { text, map };
 }
-export const tokensOf = (q: string) => fold(q).text.split(/[\s,،.;:!?()\[\]"'`]+/).filter(Boolean);
+export const tokensOf = (q: string) =>
+  fold(q)
+    .text.split(/[\s,،.;:!?()\[\]"'`]+/)
+    .filter(Boolean);
 
 /** Every position of `tok` in `text`. One-character tokens ("c") count
  *  only as whole words: as substrings they'd match nearly everything. */
@@ -39,5 +37,4 @@ export function positions(text: string, tok: string): number[] {
   return out;
 }
 
-/** Every token appears in the (already folded) text. No tokens: everything matches. */
 export const matchesAll = (folded: string, tokens: string[]) => tokens.every((t) => positions(folded, t).length > 0);

@@ -23,13 +23,11 @@ NEW = ROOT / "src" / "content"
 
 FM = re.compile(r"^---\n(.*?)\n---\n?", re.S)
 
-
 def split(text):
     m = FM.match(text)
     if not m:
         return None, text
     return m.group(1), text[m.end():]
-
 
 def drop_keys(fm, keys):
     out = []
@@ -41,14 +39,11 @@ def drop_keys(fm, keys):
             out.append(line)
     return "\n".join(out)
 
-
 def has_key(fm, key):
     return any(re.match(rf"^{key}\s*:", ln) for ln in fm.split("\n"))
 
-
 def is_draft(fm):
     return bool(re.search(r"^draft\s*:\s*true", fm, re.M))
-
 
 def main():
     if not OLD.exists():
@@ -56,7 +51,6 @@ def main():
 
     copied = skipped = 0
 
-    # ---- posts -------------------------------------------------------------
     for lang in ("ar", "en"):
         src_dir = OLD / lang
         if not src_dir.exists():
@@ -79,21 +73,14 @@ def main():
             if not has_key(fm, "lang"):
                 fm += f"\nlang: {lang}"
 
-            # In-post images are re-encoded as dithered PNGs by
-            # scripts/dither.py, so point the markdown at those. Keeps
-            # re-running this migration idempotent.
             body = re.sub(r"(/images/[^)\s]+)\.(jpg|jpeg|png|webp)", r"\1.png", body)
 
-            # The source content links two unwritten posts at dead paths
-            # (/src/pages/404.html, ./../404.html). Point them at the real 404
-            # page so they resolve; replace with real URLs once written.
             body = re.sub(r"\]\((?:\./)*(?:\.\./)*(?:src/pages/)?404\.html\)", "](/404)", body)
 
             (dest_dir / src.name).write_text(f"---\n{fm.strip()}\n---\n{body}", encoding="utf-8")
             print(f"  + writing/{lang}/{src.name}")
             copied += 1
 
-    # ---- books -------------------------------------------------------------
     for src in sorted((OLD / "books").rglob("*.md*")):
         if src.name.startswith("_"):
             print(f"  - {src.name}: stub, skipped")
@@ -115,7 +102,6 @@ def main():
 
     print(f"\ncopied {copied}, skipped {skipped}")
     print(f"source left untouched: {OLD}")
-
 
 if __name__ == "__main__":
     main()

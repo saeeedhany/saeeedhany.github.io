@@ -1,0 +1,33 @@
+---
+import { render } from 'astro:content';
+import Essay from '../layouts/Essay.astro';
+import { talkCanonical, talkPlate, type Talk } from '../data/talks';
+import type { Lang } from '../data/site';
+
+interface Props {
+  lang: Lang;
+  talk: Talk;
+  rank: number;
+  number: string;
+}
+const { lang, talk, rank, number } = Astro.props;
+const { Content } = await render(talk);
+const canonical = talkCanonical(talk);
+---
+
+<Essay
+  lang={lang}
+  contentLang={talk.data.lang}
+  title={talk.data.title}
+  date={talk.data.date}
+  description={talk.data.description}
+  tags={[...talk.data.tags]}
+  plate={talkPlate(talk, rank)}
+  index={number}
+  canonical={canonical}
+  audio={talk.data.audio}
+  section="talks"
+  href={canonical}
+>
+  <Content />
+</Essay>

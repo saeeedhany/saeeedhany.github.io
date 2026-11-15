@@ -1,0 +1,116 @@
+.nav {
+  position: relative;
+  z-index: 110;
+  padding-block: var(--s-xl);
+}
+
+.nav__inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s-l);
+}
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: var(--s-xl);
+}
+.nav__links--end {
+  justify-content: flex-end;
+}
+
+.nav__link {
+  position: relative;
+  padding-block: 2px;
+}
+.nav__link::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: var(--hair);
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: inline-start;
+  transition: transform var(--dur) var(--ease);
+}
+.nav__link:hover::after,
+.nav__link[aria-current]::after {
+  transform: scaleX(1);
+}
+
+.nav__mark {
+  font-family: var(--f-display);
+  font-size: var(--t-title);
+  font-weight: 500;
+  /* 0.92 is right for two lines of Latin caps; Arabic needs the full box */
+  line-height: var(--mark-lh, 0.92);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+}
+
+[dir='rtl'] .nav__mark,
+[lang='ar'] .nav__mark {
+  --mark-lh: 1.15;
+  font-size: calc(var(--t-title) * 0.82);
+}
+
+.nav__center {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-s);
+}
+
+.nav__social {
+  opacity: 0.85;
+}
+
+.nav__links--end {
+  gap: var(--s-xl);
+}
+.nav__group {
+  display: flex;
+  align-items: center;
+  gap: var(--s-xl);
+}
+
+.nav__tools {
+  display: none;
+  align-items: center;
+  gap: var(--s-s);
+}
+
+@media (max-width: 960px) {
+  .nav__inner {
+    grid-template-columns: 1fr auto;
+  }
+  /* Two-class selectors on purpose: .socials and .theme-switch are defined
+     further down this file with equal single-class specificity, so a plain
+     `.nav__social { display: none }` here loses to them on source order. */
+  .nav__links,
+  .nav__links--end,
+  .nav .nav__social {
+    display: none;
+  }
+  .nav__center {
+    justify-items: start;
+  }
+  .nav__mark {
+    text-align: start;
+  }
+  .nav__tools {
+    display: flex;
+  }
+  .nav .nav__burger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav {
+    padding-block: var(--s-l);
+  }
+}

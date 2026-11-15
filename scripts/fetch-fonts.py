@@ -24,11 +24,9 @@ FAMILIES = [
     ("IBM+Plex+Mono",        "wght@400;500"),      # metadata mono
 ]
 
-
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     return urllib.request.urlopen(req, timeout=60).read()
-
 
 def main():
     FONTDIR.mkdir(parents=True, exist_ok=True)
@@ -40,7 +38,6 @@ def main():
         urls = sorted(set(re.findall(r"url\((https://[^)]+\.woff2)\)", css)))
         print(f"{fam:18} {len(urls):2} files")
         for u in urls:
-            # stable local name from the google path: .../s/reemkufi/v27/abc.woff2
             parts = u.rstrip("/").split("/")
             name = f"{parts[-3]}-{parts[-2]}-{parts[-1]}"
             dest = FONTDIR / name
@@ -58,7 +55,6 @@ def main():
     total = sum(f.stat().st_size for f in files)
     print(f"\n{len(files)} woff2 files, {total / 1024:.0f} KB total")
     print(f"wrote {OUT.relative_to(ROOT)}")
-
 
 if __name__ == "__main__":
     main()

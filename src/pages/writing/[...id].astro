@@ -1,27 +1,8 @@
 ---
-import { render } from 'astro:content';
-import Essay from '../../layouts/Essay.astro';
-import { postPaths, plateFor, postCanonical } from '../../data/posts';
+import PostPage from '../../components/PostPage.astro';
+import { postPaths } from '../../data/posts';
 
-// Every post, English chrome. Its Arabic-chrome twin is /ar/writing/[...id].
 export const getStaticPaths = postPaths;
-
-const { post, rank, number } = Astro.props;
-const { Content } = await render(post);
 ---
 
-<Essay
-  lang="en"
-  contentLang={post.data.lang}
-  title={post.data.title}
-  date={post.data.date}
-  description={post.data.description}
-  tags={[...post.data.tags]}
-  plate={plateFor(post, rank)}
-  index={number}
-  canonical={postCanonical(post)}
-  audio={post.data.audio}
-  href={postCanonical(post)}
->
-  <Content />
-</Essay>
+<PostPage lang="en" {...Astro.props} />

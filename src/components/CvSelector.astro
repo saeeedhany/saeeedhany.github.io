@@ -7,40 +7,35 @@ interface Props {
 const { lang } = Astro.props;
 const t = COPY[lang];
 const anyReady = CVS.some((c) => c.ready);
+const voice = lang === 'ar' ? 'chrome chrome--intl' : 'chrome';
 ---
 
-<!--
-  The reference's three-tab OS selector (": macOS : | : Linux : | : Windows :"),
-  repurposed: three CVs for three audiences. Same component, real work.
-  Tab labels are prose, so they take the page-language UI voice; the filename
-  row is a technical token, so it stays Latin mono.
--->
 <div class="cv" data-cv>
-  <p class="cv__label chrome">{t.cvLabel}</p>
+  <p class={`cv__label ${voice}`}>{t.cvLabel}</p>
 
   <div class="cv__shell">
     <div class="cv__tabs" role="tablist" aria-label={t.cvLabel}>
-      {
-        CVS.map((cv, i) => (
-          <button
-            class="cv__tab"
-            role="tab"
-            type="button"
-            id={`cv-tab-${cv.id}`}
-            data-cv-tab={cv.id}
-            data-file={cv.file}
-            data-ready={String(cv.ready)}
-            aria-selected={i === 0 ? 'true' : 'false'}
-            tabindex={i === 0 ? 0 : -1}
-          >
-            <span class="cv__tab-name">{cv.name[lang]}</span>
-          </button>
-        ))
-      }
+      {CVS.map((cv, i) => (
+        <button
+          class="cv__tab"
+          role="tab"
+          type="button"
+          id={`cv-tab-${cv.id}`}
+          data-cv-tab={cv.id}
+          data-file={cv.file}
+          data-ready={String(cv.ready)}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          tabindex={i === 0 ? 0 : -1}
+        >
+          <span class="cv__tab-name">{cv.name[lang]}</span>
+        </button>
+      ))}
     </div>
 
     <div class="cv__row">
-      <span class="cv__file" data-cv-file>{CVS[0].file.replace(/^\//, '')}</span>
+      <span class="cv__file" data-cv-file>
+        {CVS[0].file.replace(/^\//, '')}
+      </span>
       <a
         class="cv__get"
         data-cv-get
@@ -48,7 +43,15 @@ const anyReady = CVS.some((c) => c.ready);
         download
         aria-disabled={CVS[0].ready ? undefined : 'true'}
       >
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.2"
+        >
           <path d="M6 1v7M3 5.5 6 8.5 9 5.5M1.5 10.5h9" />
         </svg>
         {t.download}
@@ -56,13 +59,12 @@ const anyReady = CVS.some((c) => c.ready);
     </div>
   </div>
 
-  {!anyReady && <p class="cv__note chrome chrome--info">{t.cvPending}</p>}
+  {!anyReady && <p class={`cv__note ${voice} chrome--info`}>{t.cvPending}</p>}
 </div>
 
 <script>
   import { onPage } from '../scripts/lifecycle';
 
-  // Roving-tabindex tablist.
   onPage('cv-selector', (signal) => {
     for (const root of document.querySelectorAll<HTMLElement>('[data-cv]')) {
       const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cv-tab]'));
@@ -89,16 +91,20 @@ const anyReady = CVS.some((c) => c.ready);
 
       tabs.forEach((tab, i) => {
         tab.addEventListener('click', () => select(tab), { signal });
-        tab.addEventListener('keydown', (e) => {
-          const rtl = getComputedStyle(root).direction === 'rtl';
-          const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
-          const back = rtl ? 'ArrowRight' : 'ArrowLeft';
-          const j = e.key === fwd ? (i + 1) % tabs.length : e.key === back ? (i - 1 + tabs.length) % tabs.length : -1;
-          if (j < 0) return;
-          e.preventDefault();
-          select(tabs[j]);
-          tabs[j].focus();
-        }, { signal });
+        tab.addEventListener(
+          'keydown',
+          (e) => {
+            const rtl = getComputedStyle(root).direction === 'rtl';
+            const fwd = rtl ? 'ArrowLeft' : 'ArrowRight';
+            const back = rtl ? 'ArrowRight' : 'ArrowLeft';
+            const j = e.key === fwd ? (i + 1) % tabs.length : e.key === back ? (i - 1 + tabs.length) % tabs.length : -1;
+            if (j < 0) return;
+            e.preventDefault();
+            select(tabs[j]);
+            tabs[j].focus();
+          },
+          { signal },
+        );
       });
     }
   });

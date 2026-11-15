@@ -1,0 +1,39 @@
+.footer__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.footer__plate {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55; /* on the container, not the img — see .quote__plate */
+}
+.footer__plate img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center 28%;
+}
+
+.footer__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ink) 25%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 55%, transparent) 55%,
+    var(--ink) 100%
+  );
+}
+
+.footer .ghost {
+  z-index: 1;
+}
+.footer__inner {
+  z-index: 2;
+}

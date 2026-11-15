@@ -1,0 +1,42 @@
+.burger,
+.menu__close {
+  align-items: center;
+  gap: var(--s-s);
+  min-block-size: 40px;
+  padding-inline: var(--s-xs);
+  color: inherit;
+}
+
+.burger__lines,
+.menu__x {
+  position: relative;
+  display: inline-block;
+  inline-size: 22px;
+  block-size: 14px;
+}
+
+.burger__lines > span,
+.menu__x > span {
+  position: absolute;
+  inset-inline: 0;
+  block-size: 1.5px;
+  background: currentColor;
+  transition:
+    transform 0.45s cubic-bezier(0.76, 0, 0.24, 1),
+    opacity 0.3s var(--ease),
+    inline-size 0.3s var(--ease);
+}
+
+.burger__lines > span:nth-child(1) {
+  inset-block-start: 0;
+}
+.burger__lines > span:nth-child(2) {
+  inset-block-start: calc(50% - 0.75px);
+}
+.burger__lines > span:nth-child(3) {
+  inset-block-end: 0;
+}
+
+.burger:hover .burger__lines > span:nth-child(2) {
+  inline-size: 60%;
+}

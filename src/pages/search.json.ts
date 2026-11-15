@@ -1,4 +1,4 @@
-import { getCollection } from 'astro:content';
+import { getBooks } from '../data/books';
 import { getPosts } from '../data/posts';
 import { getTalks } from '../data/talks';
 import { getPhotos, hasStory } from '../data/gallery';
@@ -17,7 +17,6 @@ import { slugOf } from '../data/site';
  */
 export const prerender = true;
 
-/** Markdown -> readable plain text. Good enough for matching and snippets. */
 function plain(md = ''): string {
   return md
     .replace(/```[\s\S]*?```/g, ' ') // fenced code
@@ -43,7 +42,7 @@ export async function GET() {
     body: plain(p.body),
   }));
 
-  const books = (await getCollection('books', (e) => !e.data.draft)).map((b) => ({
+  const books = (await getBooks()).map((b) => ({
     type: 'book' as const,
     slug: slugOf(b.id),
     title: b.data.title,
@@ -67,7 +66,6 @@ export async function GET() {
     body: plain(k.body),
   }));
 
-  // photos with something to find: a title or a story
   const photos = (await getPhotos())
     .filter((p) => p.data.title || hasStory(p))
     .map((p) => ({

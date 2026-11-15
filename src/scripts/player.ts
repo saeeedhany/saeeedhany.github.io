@@ -29,9 +29,27 @@ function create() {
   let lastSave = 0;
 
   const store = {
-    get: (k: string, session = false) => { try { return (session ? sessionStorage : localStorage).getItem(k); } catch { return null; } },
-    set: (k: string, v: string, session = false) => { try { (session ? sessionStorage : localStorage).setItem(k, v); } catch { /* ignore */ } },
-    del: (k: string, session = false) => { try { (session ? sessionStorage : localStorage).removeItem(k); } catch { /* ignore */ } },
+    get: (k: string, session = false) => {
+      try {
+        return (session ? sessionStorage : localStorage).getItem(k);
+      } catch {
+        return null;
+      }
+    },
+    set: (k: string, v: string, session = false) => {
+      try {
+        (session ? sessionStorage : localStorage).setItem(k, v);
+      } catch {
+        /* ignore */
+      }
+    },
+    del: (k: string, session = false) => {
+      try {
+        (session ? sessionStorage : localStorage).removeItem(k);
+      } catch {
+        /* ignore */
+      }
+    },
   };
 
   const emit = () => listeners.forEach((fn) => fn({ ...s }));
@@ -83,24 +101,42 @@ function create() {
     }
     emit();
   });
-  audio.addEventListener('waiting', () => { s.loading = true; emit(); });
-  audio.addEventListener('playing', () => { s.loading = false; s.playing = true; emit(); });
-  audio.addEventListener('pause', () => { s.playing = false; s.loading = false; savePos(); emit(); });
+  audio.addEventListener('waiting', () => {
+    s.loading = true;
+    emit();
+  });
+  audio.addEventListener('playing', () => {
+    s.loading = false;
+    s.playing = true;
+    emit();
+  });
+  audio.addEventListener('pause', () => {
+    s.playing = false;
+    s.loading = false;
+    savePos();
+    emit();
+  });
   audio.addEventListener('ended', () => {
     s.playing = false;
     if (s.track) store.del(posKey(s.track.src)); // finished: next time starts over
     emit();
   });
-  audio.addEventListener('error', () => { s.error = true; s.loading = false; s.playing = false; emit(); });
+  audio.addEventListener('error', () => {
+    s.error = true;
+    s.loading = false;
+    s.playing = false;
+    emit();
+  });
   audio.addEventListener('timeupdate', () => {
     s.time = audio.currentTime;
     const now = performance.now();
-    if (now - lastSave > 2000) { lastSave = now; savePos(); }
+    if (now - lastSave > 2000) {
+      lastSave = now;
+      savePos();
+    }
     emit();
   });
   addEventListener('pagehide', savePos);
-  // views re-read state after a page swap (e.g. the mini bar re-checks
-  // whether the new page is the playing track's own page)
   addEventListener('player:refresh', emit);
 
   const api = {
@@ -115,7 +151,8 @@ function create() {
       } catch (err) {
         s.loading = false;
         // NotAllowedError = autoplay blocked (e.g. after reload): stay paused, not an error
-        if ((err as DOMException)?.name !== 'NotAllowedError' && (err as DOMException)?.name !== 'AbortError') s.error = true;
+        if ((err as DOMException)?.name !== 'NotAllowedError' && (err as DOMException)?.name !== 'AbortError')
+          s.error = true;
         emit();
       }
     },
@@ -159,7 +196,6 @@ function create() {
     },
   };
 
-  // after a full reload: bring the last track back, paused at its position
   const restored = parseTrack(store.get(CURRENT_KEY, true));
   if (restored) load(restored);
 

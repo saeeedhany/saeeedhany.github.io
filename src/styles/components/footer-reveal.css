@@ -1,0 +1,35 @@
+.footer--reveal {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 1;
+  block-size: var(--footer-h);
+  /* capped to the shell like .page, or the blurred plate shows through the
+     ink edges on wide screens where the page column no longer reaches */
+  max-inline-size: var(--shell);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* fixed height, so it cannot carry the in-flow version's tall top padding */
+  padding-block: var(--s-2xl);
+  overflow: hidden;
+  opacity: calc(0.35 + 0.65 * var(--footer-progress, 0));
+  filter: blur(calc(10px * (1 - var(--footer-progress, 0))));
+  /* A blur paints ~2x its radius OUTSIDE the element. The page covers the
+     footer everywhere except the ink gutters beside the shell on wide screens,
+     where that halo showed as a pale strip down both edges of the hero.
+     clip-path is applied after filter, so it trims the halo to the box; the
+     extra 1px per side removes the half-pixel column that survives when the
+     shell centres on a .5px boundary (e.g. a 1565px-wide viewport). */
+  clip-path: inset(0 1px);
+  will-change: opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer--reveal {
+    opacity: 1;
+    filter: none;
+    will-change: auto;
+  }
+}

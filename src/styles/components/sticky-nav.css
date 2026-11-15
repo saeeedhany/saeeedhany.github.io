@@ -1,0 +1,89 @@
+.navbar {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-start: 0;
+  z-index: 90;
+  pointer-events: none;
+  transform: translateY(-101%);
+  transition: transform 0.42s var(--ease);
+  will-change: transform;
+}
+
+.navbar[data-shown='true'] {
+  transform: translateY(0);
+}
+
+.navbar__inner {
+  /* NOT --shell. .page caps at --shell but carries --frame of padding inside
+     it, so the actual content bands are (--shell - 2 * --frame) wide. Matching
+     --shell here made the bar overhang the content by 5px per side, which
+     showed as a notch at its bottom corners. */
+  max-inline-size: calc(var(--shell) - 2 * var(--frame));
+  margin-inline: auto;
+  pointer-events: auto;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    inset 0 -1px 0 0 color-mix(in srgb, var(--ink) 12%, transparent),
+    0 12px 32px -20px color-mix(in srgb, var(--shadow-ink) 30%, transparent);
+}
+
+.navbar__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-l);
+  padding-block: var(--s-m);
+  min-block-size: 64px;
+}
+
+.navbar__end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-xl);
+}
+
+.navbar__links {
+  display: flex;
+  align-items: center;
+  gap: var(--s-xl);
+  flex-wrap: wrap;
+}
+
+.navbar__burger {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .navbar__links,
+  .navbar .navbar__theme {
+    display: none;
+  }
+  .navbar__burger {
+    display: inline-flex;
+  }
+}
+
+.navbar__mark {
+  font-family: var(--f-display);
+  font-size: var(--t-subtitle);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: var(--case-disp);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar__row {
+    min-block-size: 52px;
+  }
+  .navbar__mark {
+    font-size: var(--t-body);
+  }
+}

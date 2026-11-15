@@ -14,7 +14,7 @@
  */
 
 export interface Day {
-  date: string; // YYYY-MM-DD
+  date: string;
   level: 0 | 1 | 2 | 3 | 4;
   count: number;
 }
@@ -51,7 +51,6 @@ async function load(user: string): Promise<Calendar | null> {
 }
 
 function parse(html: string): Day[] {
-  // id -> exact count, from the tooltips
   const counts = new Map<string, number>();
   for (const m of html.matchAll(/<tool-tip\b[^>]*\bfor="([^"]+)"[^>]*>([^<]*)<\/tool-tip>/g)) {
     const n = /^\s*(\d[\d,]*)\s+contribution/.exec(m[2]);

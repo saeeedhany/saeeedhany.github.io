@@ -1,14 +1,18 @@
-import { NAV } from './site';
+import { NAV, sectionHref, type Lang } from './site';
 import { getTalks } from './talks';
 import { getPhotos } from './gallery';
 
-export type NavItem = (typeof NAV)[number];
+function isCurrent(pathname: string, href: string): boolean {
+  const path = pathname.replace(/\/$/, '') || '/';
+  const bare = href.replace(/\/$/, '');
+  return path === bare || path.startsWith(`${bare}/`);
+}
 
-/** NAV, minus sections that are still empty (so nobody lands on an empty page). */
-export async function getNav(): Promise<NavItem[]> {
+export async function getNav(lang: Lang, pathname: string) {
   const [talks, photos] = await Promise.all([getTalks(), getPhotos()]);
-  return NAV.filter(
-    (item) =>
-      (item.href.en !== '/talks' || talks.length > 0) && (item.href.en !== '/gallery' || photos.length > 0),
-  );
+  const empty = new Set([talks.length === 0 && 'talks', photos.length === 0 && 'gallery']);
+  return NAV.filter((item) => !empty.has(item.section)).map((item) => {
+    const href = sectionHref(lang, item.section);
+    return { href, label: item.label[lang], current: isCurrent(pathname, href) };
+  });
 }

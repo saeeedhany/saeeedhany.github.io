@@ -4,7 +4,6 @@ import { getLenis } from './scroll';
 const root = document.documentElement;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 
-/** Shared by the menu and the search overlay (via site:lock / site:unlock). */
 export function lock() {
   root.classList.add('menu-open');
   getLenis()?.stop();
@@ -61,10 +60,13 @@ onPage('menu', (signal) => {
   closeBtn?.addEventListener('click', () => close(), { signal });
   document.addEventListener('menu:close', () => close(false), { signal });
   document.addEventListener('keydown', (e) => e.key === 'Escape' && close(), { signal });
-  // following a link from the menu: let navigation proceed, don't yank focus
-  menu.addEventListener('click', (e) => {
-    if (e.target instanceof Element && e.target.closest('a')) close(false);
-  }, { signal });
+  menu.addEventListener(
+    'click',
+    (e) => {
+      if (e.target instanceof Element && e.target.closest('a')) close(false);
+    },
+    { signal },
+  );
   matchMedia('(min-width: 961px)').addEventListener('change', (m) => m.matches && close(false), { signal });
 
   return () => close(false); // leaving the page with the menu open

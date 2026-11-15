@@ -20,8 +20,12 @@ const data: Track = { ...track, duration: parseDuration(track.duration) };
   aria-pressed="false"
   aria-label={`${t.play}: ${track.title}`}
 >
-  <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
-  <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor" /></svg>
+  <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M4 2.5v11l9-5.5z" fill="currentColor" />
+  </svg>
+  <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor" />
+  </svg>
 </button>
 
 <script>
@@ -34,10 +38,14 @@ const data: Track = { ...track, duration: parseDuration(track.duration) };
     if (!buttons.length) return;
     const tracks = buttons.map((b) => parseTrack(b.dataset.track));
     buttons.forEach((b, i) => {
-      b.addEventListener('click', (e) => {
-        e.preventDefault(); // the button sits inside a row that also links to the talk
-        if (tracks[i]) toggle(tracks[i]!);
-      }, { signal });
+      b.addEventListener(
+        'click',
+        (e) => {
+          e.preventDefault(); // the button sits inside a row that also links to the talk
+          if (tracks[i]) toggle(tracks[i]!);
+        },
+        { signal },
+      );
     });
     const off = subscribe((st) => {
       buttons.forEach((b, i) => {
