@@ -1,0 +1,76 @@
+---
+export function getStaticPaths() {
+  const COURSE = 'https://seorg.saeed.cool';
+
+  const LESSONS = [
+    'what-is-seo',
+    'how-search-works',
+    'search-results',
+    'ranking-signals',
+    'crawling',
+    'indexing',
+    'site-structure',
+    'javascript-seo',
+    'page-experience',
+    'structured-data',
+    'international-seo',
+    'keyword-research',
+    'search-intent',
+    'helpful-content',
+    'on-page',
+    'content-maintenance',
+    'how-links-work',
+    'earning-links',
+    'link-risks',
+    'local-ranking',
+    'reviews-and-citations',
+    'measuring',
+    'traffic-drops',
+    'seo-audit',
+  ];
+
+  const MOVED: Record<string, string> = {
+    '': '/',
+    overview: '/learn/how-search-works/',
+    'chapters/technical-seo': '/learn/crawling/',
+    'chapters/content-writing': '/learn/keyword-research/',
+    'chapters/link-building': '/learn/how-links-work/',
+    'chapters/local-seo': '/learn/local-ranking/',
+    'chapters/quick-answers': '/learn/ranking-signals/',
+    glossary: '/glossary/',
+    checklists: '/checklists/',
+    'algorithm-updates': '/algorithm-updates/',
+    blog: '/learn/search-intent/',
+    'blog/2025/06/08/how-to-think-about-search-intent': '/learn/search-intent/',
+    downloads: '/',
+    ar: '/',
+    ...Object.fromEntries(LESSONS.map((slug) => [`learn/${slug}`, `/learn/${slug}/`])),
+  };
+
+  return Object.entries(MOVED).map(([path, to]) => ({
+    params: { path: path || undefined },
+    props: { target: COURSE + to },
+  }));
+}
+
+const { target } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Moved to {target}</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={target} />
+    <meta http-equiv="refresh" content={`0; url=${target}`} />
+    <script is:inline define:vars={{ target }}>
+      location.replace(target + location.hash);
+    </script>
+  </head>
+  <body>
+    <p>
+      This page moved to <a href={target}>{target}</a>.
+    </p>
+  </body>
+</html>

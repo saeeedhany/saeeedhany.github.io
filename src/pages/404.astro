@@ -5,6 +5,13 @@ const t = COPY.en;
 ---
 
 <Base lang="en" title="404" description={t.notFoundLead} navSurface="ink">
+  <script is:inline>
+    if (location.pathname.startsWith('/SEO-RG')) {
+      location.replace(
+        'https://seorg.saeed.cool' + (location.pathname.slice(7) || '/') + location.search + location.hash,
+      );
+    }
+  </script>
   <section class="band s-ink" style="min-height: 60vh; display:grid; align-content:center">
     <div class="container">
       <p class="chrome" style="opacity:.6; margin-block-end: var(--s-l)">
